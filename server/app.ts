@@ -3,9 +3,9 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { CLASSES, MOON_SIGNS } from '../src/data/constants';
 import type { TCRSDataResponse } from '../src/types';
+import { createConcurrencyLimiter } from './concurrencyLimiter';
 import { parseTCRSFile } from './tcrsParser';
 
 const DEFAULT_PUBLIC_ORIGIN = 'https://fransisc0.github.io';
@@ -18,6 +18,7 @@ export interface AppOptions {
   dataLoader?: DataLoader;
   isProduction?: boolean;
   rateLimitMax?: number;
+  maxConcurrentRequests?: number;
   serveClient?: boolean;
 }
 
@@ -65,8 +66,12 @@ function apiMethods(req: Request, res: Response, next: NextFunction): void {
   res.status(405).json({ error: 'Method not allowed.' });
 }
 
-function readQueryValue(value: unknown): string | undefined {
-  return typeof value === 'string' && value.length <= 40 ? value : undefined;
+function readQueryValue(value: unknown, fallback: string): { valid: boolean; value: string } {
+  if (value === undefined) return { valid: true, value: fallback };
+  if (typeof value !== 'string' || value.length === 0 || value.length > 40) {
+    return { valid: false, value: fallback };
+  }
+  return { valid: true, value };
 }
 
 export async function createApp(options: AppOptions = {}): Promise<Express> {
@@ -105,10 +110,18 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
     legacyHeaders: false,
     message: { error: 'Too many requests. Please wait and try again.' },
   });
+  const tcrsConcurrency = createConcurrencyLimiter(options.maxConcurrentRequests ?? 8);
 
-  app.get('/api/tcrs', tcrsLimiter, async (req, res) => {
-    const className = readQueryValue(req.query.class) ?? 'Seal_Clubber';
-    const moonSign = readQueryValue(req.query.sign) ?? 'Mongoose';
+  app.get('/api/tcrs', tcrsLimiter, tcrsConcurrency, async (req, res) => {
+    const classResult = readQueryValue(req.query.class, 'Seal_Clubber');
+    const signResult = readQueryValue(req.query.sign, 'Mongoose');
+    if (!classResult.valid || !signResult.valid) {
+      res.status(400).json({ error: 'Invalid class or moon sign specified.' });
+      return;
+    }
+
+    const className = classResult.value;
+    const moonSign = signResult.value;
     const validClass = CLASSES.some((entry) => entry.id === className);
     const validSign = MOON_SIGNS.some((entry) => entry.id === moonSign);
 
@@ -126,7 +139,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
       res.setHeader('Cache-Control', CACHE_CONTROL);
       res.json(data);
     } catch {
-      console.error('TCRS request failed');
+      console.error(JSON.stringify({ level: 'error', event: 'tcrs_request_failed' }));
       res.status(500).json({ error: 'Failed to retrieve TCRS data. Please retry.' });
     }
   });
@@ -141,6 +154,7 @@ export async function createApp(options: AppOptions = {}): Promise<Express> {
   });
 
   if (!isProduction) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
     app.use(vite.middlewares);
   } else if (options.serveClient ?? process.env.SERVE_CLIENT === 'true') {

@@ -8,11 +8,19 @@ React and Vite build the TCRS viewer for the `/kol-tools/tcrs/` GitHub Pages pat
 
 Express validates fixed class and moon-sign identifiers, parses checked-in KoLmafia data, and returns the existing `TCRSDataResponse` contract. Responses use compression, ETags, browser caching, request rate limiting, and a bounded six-entry LRU cache. Concurrent requests for the same combination share one parser operation.
 
+Resource controls operate at two layers: at most eight dataset responses may be active at once, and at most two uncached parser jobs may run concurrently. Upstream files have a four-second timeout and a 2 MiB streaming limit.
+
 The API has no authentication, write endpoints, database, or user content. Only the GitHub Pages origin is allowed by CORS in production.
 
 ## Data
 
 Checked-in reference files provide a deterministic fallback. The parser can refresh a requested TCRS file from the official KoLmafia repository with a short timeout. Failed upstream requests fall back to the bundled snapshot.
+
+Parser responsibilities are separated across normalization, response creation, source retrieval, zone enrichment, cache, and concurrency modules. The remaining parser orchestrator preserves the established response schema and categorization rules.
+
+## Client organization
+
+Shared semantics and filtering remain pure and independently tested. Item-list state, desktop filter controls, quality controls, preference persistence, and item-type presentation configuration are separate from the rendering orchestrators. Browser and server code use separate strict TypeScript and ESLint environments.
 
 ## Build artifacts
 

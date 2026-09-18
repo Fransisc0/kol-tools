@@ -82,7 +82,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
         <a
           href={`https://wiki.kingdomofloathing.com/${encodeURIComponent(item.origName.replace(/ /g, '_'))}`}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           title={`View original item ${item.origName} on KoL Wiki`}
           aria-label={`View original item ${item.origName} on KoL Wiki`}
           className="inline-flex min-h-[34px] items-center gap-1 rounded-lg px-2 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"

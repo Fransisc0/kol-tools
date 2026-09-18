@@ -49,6 +49,13 @@ describe('public API', () => {
     expect(response.body.error).toBe('Invalid class or moon sign specified.');
   });
 
+  it('rejects malformed, repeated, and overlong parameters instead of applying defaults', async () => {
+    const app = await createApp({ isProduction: true, dataLoader: async () => testData() });
+    expect((await request(app).get('/api/tcrs?class=Seal_Clubber&class=Sauceror')).status).toBe(400);
+    expect((await request(app).get(`/api/tcrs?class=${'x'.repeat(41)}`)).status).toBe(400);
+    expect((await request(app).get('/api/tcrs?sign=')).status).toBe(400);
+  });
+
   it('returns not-modified for a matching ETag', async () => {
     const app = await createApp({ isProduction: true, dataLoader: async () => testData() });
     const first = await request(app).get('/api/tcrs');
@@ -67,7 +74,33 @@ describe('public API', () => {
     expect((await request(app).get('/api/tcrs')).status).toBe(429);
   });
 
+  it('rejects excess concurrent dataset responses with retry guidance', async () => {
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const app = await createApp({
+      isProduction: true,
+      maxConcurrentRequests: 1,
+      dataLoader: async () => {
+        await blocked;
+        return testData();
+      },
+    });
+
+    const first = request(app)
+      .get('/api/tcrs')
+      .then((response) => response);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const rejected = await request(app).get('/api/tcrs');
+    expect(rejected.status).toBe(503);
+    expect(rejected.headers['retry-after']).toBe('5');
+    release();
+    expect((await first).status).toBe(200);
+  });
+
   it('returns a generic error when data loading fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const app = await createApp({
       isProduction: true,
       dataLoader: async () => {
@@ -77,5 +110,8 @@ describe('public API', () => {
     const response = await request(app).get('/api/tcrs');
     expect(response.status).toBe(500);
     expect(response.text).not.toContain('sensitive internal path');
+    expect(errorSpy).toHaveBeenCalledWith('{"level":"error","event":"tcrs_request_failed"}');
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('sensitive internal path');
+    errorSpy.mockRestore();
   });
 });

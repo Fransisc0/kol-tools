@@ -12,6 +12,19 @@ const appHtml = await readFile(path.join(pagesDirectory, 'tcrs', 'index.html'), 
 if (!appHtml.includes('/kol-tools/tcrs/assets/')) {
   throw new Error('The TCRS client was not built with the /kol-tools/tcrs/ asset base.');
 }
+if (!appHtml.includes('http-equiv="Content-Security-Policy"')) {
+  throw new Error('The TCRS client is missing its Content Security Policy.');
+}
+if (!appHtml.includes('https://fransisc0-kol-tools-tcrs-api.onrender.com')) {
+  throw new Error('The TCRS client CSP does not permit the production API origin.');
+}
+
+for (const page of ['index.html', 'privacy.html']) {
+  const html = await readFile(path.join(pagesDirectory, page), 'utf8');
+  if (!html.includes('http-equiv="Content-Security-Policy"')) {
+    throw new Error(`${page} is missing its Content Security Policy.`);
+  }
+}
 
 const rootFiles = await readdir(pagesDirectory, { recursive: true });
 const forbidden = rootFiles.filter((entry) => /server\.(?:cjs|js|map)$/i.test(entry));

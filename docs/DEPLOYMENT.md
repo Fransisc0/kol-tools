@@ -22,6 +22,8 @@ Production environment values:
 
 The free service can sleep after inactivity. The client explains this when an initial request takes longer than eight seconds.
 
+GitHub Pages does not support project-defined HTTP response headers. The static pages therefore use a restrictive HTML CSP and referrer policy. The viewer permits inline styles because Vite injects development styles, while scripts remain restricted to same-origin modules. Header-only controls such as `frame-ancestors` would require a different static host or a proxy under a custom domain.
+
 ## Release procedure
 
 1. Run `npm run verify` locally.

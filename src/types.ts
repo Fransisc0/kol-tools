@@ -73,6 +73,9 @@ export const DEFAULT_ALLOWED_TAGS = {
   'The Sea': true,
 } as const;
 
+export type AllowedTagKey = keyof typeof DEFAULT_ALLOWED_TAGS;
+export type AllowedTags = Record<AllowedTagKey, boolean>;
+
 export const DEFAULT_THRIFTY_MODE: ThriftyMode = 'thrifty';
 export const DEFAULT_FOOD_QUALITY_FILTER: FoodQualityFilter = 'awesome-plus';
 export const DEFAULT_BOOZE_QUALITY_FILTER: BoozeQualityFilter = 'epic';

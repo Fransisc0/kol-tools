@@ -11,6 +11,9 @@ async function start(): Promise<void> {
   server = app.listen(port, host, () => {
     console.log(`TCRS API listening on ${host}:${port}`);
   });
+  server.requestTimeout = 65_000;
+  server.headersTimeout = 10_000;
+  server.keepAliveTimeout = 5_000;
 }
 
 function shutdown(signal: string): void {

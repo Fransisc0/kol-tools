@@ -1,5 +1,12 @@
 import React, { useMemo, useEffect } from 'react';
-import { BoozeQualityFilter, FoodQualityFilter, ItemTypeKey, TCRSDataResponse, TCRSItem } from '../types';
+import {
+  AllowedTags,
+  BoozeQualityFilter,
+  FoodQualityFilter,
+  ItemTypeKey,
+  TCRSDataResponse,
+  TCRSItem,
+} from '../types';
 import { GroupedItemList } from './GroupedItemList';
 import { ItemList } from './ItemList';
 import { getSubCategoryTabs } from './NavigationTabs';
@@ -11,8 +18,8 @@ interface MainContentProps {
   activeSubCategory: string;
   setActiveSubCategory: (val: string) => void;
   activeSection: string;
-  allowedTags: Record<string, boolean>;
-  setAllowedTags?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  allowedTags: AllowedTags;
+  setAllowedTags?: React.Dispatch<React.SetStateAction<AllowedTags>>;
   allowedTypes: Record<ItemTypeKey, boolean>;
   setAllowedTypes?: React.Dispatch<React.SetStateAction<Record<ItemTypeKey, boolean>>>;
   showUnchangedItems?: boolean;

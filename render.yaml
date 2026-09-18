@@ -6,7 +6,7 @@ services:
     region: virginia
     branch: main
     autoDeploy: true
-    buildCommand: npm ci && npm run typecheck && npm test && npm run clean && npm run build:server
+    buildCommand: npm ci --include=dev && npm run typecheck && npm test && npm run clean && npm run build:server && npm prune --omit=dev
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

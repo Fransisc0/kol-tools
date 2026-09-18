@@ -108,7 +108,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item }) => {
           <a
             href={`https://wiki.kingdomofloathing.com/${encodeURIComponent(item.origName.replace(/ /g, '_'))}`}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             title={`View original item ${item.origName} on KoL Wiki`}
             aria-label={`View original item ${item.origName} on KoL Wiki`}
             className="inline-flex min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px] items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"

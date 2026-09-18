@@ -89,8 +89,8 @@ export function getItemZones(itemName: string): string[] {
           }
         }
       }
-    } catch (e) {
-      console.error('Failed to parse zone data', e);
+    } catch {
+      console.error(JSON.stringify({ level: 'error', event: 'zone_data_parse_failed' }));
     }
   }
 

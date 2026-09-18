@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import { BoozeQualityFilter, FoodQualityFilter, ItemTypeKey, TCRSDataResponse, TCRSItem } from '../types';
+import {
+  AllowedTags,
+  BoozeQualityFilter,
+  FoodQualityFilter,
+  ItemTypeKey,
+  TCRSDataResponse,
+  TCRSItem,
+} from '../types';
 import { ItemList } from './ItemList';
 import { ItemLayout } from '../hooks/usePreferences';
 import { categorizeNPCStore } from '../npcStoreMapping';
@@ -10,8 +17,8 @@ interface GroupedItemListProps {
   mode: 'NPC Store' | 'Zone' | 'All';
   activeSection: string;
   activeSubCategory: string;
-  allowedTags: Record<string, boolean>;
-  setAllowedTags?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  allowedTags: AllowedTags;
+  setAllowedTags?: React.Dispatch<React.SetStateAction<AllowedTags>>;
   allowedTypes: Record<ItemTypeKey, boolean>;
   setAllowedTypes?: React.Dispatch<React.SetStateAction<Record<ItemTypeKey, boolean>>>;
   showUnchangedItems?: boolean;

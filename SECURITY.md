@@ -13,3 +13,5 @@ Include the affected URL or component, reproduction steps, likely impact, and an
 ## Security model
 
 The application is anonymous and read-only. It has no accounts, write endpoints, database, payment flow, or application-managed secrets. Browser preferences remain in local storage.
+
+The API validates fixed identifiers, restricts browser origins and methods, limits request rates and concurrency, bounds upstream downloads, and falls back to checked-in data. Deployment workflows use least-privilege permissions, immutable action revisions, dependency auditing, CodeQL, and history-aware secret scanning.

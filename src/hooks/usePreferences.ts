@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { PREFERENCE_KEYS } from '../config/preferences';
+import { readJsonPreference, readPreference, writePreference } from '../utils/safeStorage';
 import {
   ItemTypeKey,
   DEFAULT_ALLOWED_TAGS,
@@ -10,6 +12,7 @@ import {
   ThriftyMode,
   FoodQualityFilter,
   BoozeQualityFilter,
+  AllowedTags,
 } from '../types';
 
 export type ItemLayout = 'card' | 'line';
@@ -23,142 +26,108 @@ export function normalizeBoozeQualityFilter(value: string | null): BoozeQualityF
     : DEFAULT_BOOZE_QUALITY_FILTER;
 }
 
-type AllowedTags = { [K in keyof typeof DEFAULT_ALLOWED_TAGS]: boolean };
-
 function createDefaultAllowedTags(): AllowedTags {
   return { ...DEFAULT_ALLOWED_TAGS };
 }
 
 export function usePreferences() {
   const [itemLayout, setItemLayout] = useState<ItemLayout>(() => {
-    try {
-      const saved = localStorage.getItem('tcrs_item_layout');
-      if (saved === 'card' || saved === 'line') {
-        return saved;
-      }
-    } catch {}
+    const saved = readPreference(PREFERENCE_KEYS.itemLayout);
+    if (saved === 'card' || saved === 'line') return saved;
     return 'line';
   });
 
   const [thriftyMode, setThriftyModeState] = useState<ThriftyMode>(() => {
-    try {
-      const saved = localStorage.getItem('tcrs_thrifty_mode');
-      if (saved === 'thrifty' || saved === 'non-thrifty' || saved === 'all') {
-        return saved;
-      }
-    } catch {}
+    const saved = readPreference(PREFERENCE_KEYS.thriftyMode);
+    if (saved === 'thrifty' || saved === 'non-thrifty' || saved === 'all') return saved;
     return DEFAULT_THRIFTY_MODE;
   });
 
   const [allowedTags, setAllowedTags] = useState<AllowedTags>(() => {
-    try {
-      const saved = localStorage.getItem('tcrs_allowed_tags');
-      const savedMode = (localStorage.getItem('tcrs_thrifty_mode') as ThriftyMode) || 'thrifty';
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed === 'object' && parsed !== null) {
-          return {
-            'Thrifty Accessible': savedMode === 'all' || savedMode === 'thrifty',
-            'Non-Thrifty': savedMode === 'all' || savedMode === 'non-thrifty',
-            'NPC Store': parsed['NPC Store'] ?? true,
-            Craftable: parsed['Craftable'] ?? parsed['Easily Craftable Recipe'] ?? true,
-            'Drops / Other': parsed['Drops / Other'] ?? true,
-            'The Sea': parsed['The Sea'] ?? true,
-          };
-        }
-      }
-    } catch {}
+    const parsed = readJsonPreference(PREFERENCE_KEYS.allowedTags);
+    const savedMode = readPreference(PREFERENCE_KEYS.thriftyMode) || 'thrifty';
+    if (typeof parsed === 'object' && parsed !== null) {
+      const values = parsed as Record<string, unknown>;
+      return {
+        'Thrifty Accessible': savedMode === 'all' || savedMode === 'thrifty',
+        'Non-Thrifty': savedMode === 'all' || savedMode === 'non-thrifty',
+        'NPC Store': values['NPC Store'] !== false,
+        Craftable: values.Craftable !== false && values['Easily Craftable Recipe'] !== false,
+        'Drops / Other': values['Drops / Other'] !== false,
+        'The Sea': values['The Sea'] !== false,
+      };
+    }
     return createDefaultAllowedTags();
   });
 
   const [allowedTypes, setAllowedTypes] = useState<Record<ItemTypeKey, boolean>>(() => {
-    try {
-      const saved = localStorage.getItem('tcrs_allowed_types');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed === 'object' && parsed !== null) {
-          return {
-            ...DEFAULT_ALLOWED_TYPES,
-            ...parsed,
-            // Ensure 'other' strictly defaults to false unless explicitly true
-            other: parsed.other === true,
-            // Ensure 'monsterManualPotion' is preserved
-            monsterManualPotion: parsed.monsterManualPotion ?? DEFAULT_ALLOWED_TYPES.monsterManualPotion,
-          };
-        }
-      }
-    } catch {}
+    const parsed = readJsonPreference(PREFERENCE_KEYS.allowedTypes);
+    if (typeof parsed === 'object' && parsed !== null) {
+      const values = parsed as Partial<Record<ItemTypeKey, unknown>>;
+      return {
+        ...DEFAULT_ALLOWED_TYPES,
+        ...Object.fromEntries(
+          Object.keys(DEFAULT_ALLOWED_TYPES).map((key) => [
+            key,
+            typeof values[key as ItemTypeKey] === 'boolean'
+              ? values[key as ItemTypeKey]
+              : DEFAULT_ALLOWED_TYPES[key as ItemTypeKey],
+          ]),
+        ),
+        // Ensure 'other' strictly defaults to false unless explicitly true
+        other: values.other === true,
+        // Ensure 'monsterManualPotion' is preserved
+        monsterManualPotion:
+          typeof values.monsterManualPotion === 'boolean'
+            ? values.monsterManualPotion
+            : DEFAULT_ALLOWED_TYPES.monsterManualPotion,
+      };
+    }
     return { ...DEFAULT_ALLOWED_TYPES };
   });
 
   const [showUnchangedItems, setShowUnchangedItems] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('tcrs_show_unchanged_items');
-      if (saved !== null) {
-        return saved === 'true';
-      }
-    } catch {}
+    const saved = readPreference(PREFERENCE_KEYS.showUnchangedItems);
+    if (saved !== null) return saved === 'true';
     return DEFAULT_SHOW_UNCHANGED_ITEMS;
   });
 
   const [foodQualityFilter, setFoodQualityFilter] = useState<FoodQualityFilter>(() => {
-    try {
-      const saved = localStorage.getItem('tcrs_food_quality_filter');
-      if (saved && VALID_FOOD_QUALITIES.has(saved)) {
-        return saved as FoodQualityFilter;
-      }
-    } catch {}
+    const saved = readPreference(PREFERENCE_KEYS.foodQualityFilter);
+    if (saved && VALID_FOOD_QUALITIES.has(saved)) return saved as FoodQualityFilter;
     return DEFAULT_FOOD_QUALITY_FILTER;
   });
 
   const [boozeQualityFilter, setBoozeQualityFilter] = useState<BoozeQualityFilter>(() => {
-    try {
-      return normalizeBoozeQualityFilter(localStorage.getItem('tcrs_booze_quality_filter'));
-    } catch {
-      return DEFAULT_BOOZE_QUALITY_FILTER;
-    }
+    return normalizeBoozeQualityFilter(readPreference(PREFERENCE_KEYS.boozeQualityFilter));
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_allowed_tags', JSON.stringify(allowedTags));
-    } catch {}
+    writePreference(PREFERENCE_KEYS.allowedTags, JSON.stringify(allowedTags));
   }, [allowedTags]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_allowed_types', JSON.stringify(allowedTypes));
-    } catch {}
+    writePreference(PREFERENCE_KEYS.allowedTypes, JSON.stringify(allowedTypes));
   }, [allowedTypes]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_thrifty_mode', thriftyMode);
-    } catch {}
+    writePreference(PREFERENCE_KEYS.thriftyMode, thriftyMode);
   }, [thriftyMode]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_item_layout', itemLayout);
-    } catch {}
+    writePreference(PREFERENCE_KEYS.itemLayout, itemLayout);
   }, [itemLayout]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_show_unchanged_items', String(showUnchangedItems));
-    } catch {}
+    writePreference(PREFERENCE_KEYS.showUnchangedItems, String(showUnchangedItems));
   }, [showUnchangedItems]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_food_quality_filter', foodQualityFilter);
-    } catch {}
+    writePreference(PREFERENCE_KEYS.foodQualityFilter, foodQualityFilter);
   }, [foodQualityFilter]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('tcrs_booze_quality_filter', boozeQualityFilter);
-    } catch {}
+    writePreference(PREFERENCE_KEYS.boozeQualityFilter, boozeQualityFilter);
   }, [boozeQualityFilter]);
 
   const setThriftyMode = (mode: ThriftyMode) => {

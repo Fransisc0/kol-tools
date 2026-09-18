@@ -1,4 +1,11 @@
-import { BoozeQualityFilter, DEFAULT_ALLOWED_TAGS, FoodQualityFilter, ItemTypeKey, TCRSItem } from '../types';
+import {
+  AllowedTags,
+  BoozeQualityFilter,
+  DEFAULT_ALLOWED_TAGS,
+  FoodQualityFilter,
+  ItemTypeKey,
+  TCRSItem,
+} from '../types';
 import { getItemType, isBoozeQualityMatch, isFoodQualityMatch, isUnchangedItem } from './itemUtils';
 
 export type ItemSort = 'bonus_desc' | 'bonus_asc' | 'duration' | 'name' | 'id';
@@ -7,7 +14,7 @@ export interface ItemFilterOptions {
   showUnchangedItems: boolean;
   foodQualityFilter: FoodQualityFilter;
   boozeQualityFilter: BoozeQualityFilter;
-  allowedTags: Record<string, boolean>;
+  allowedTags: AllowedTags;
   allowedTypes: Record<ItemTypeKey, boolean>;
   searchQuery: string;
   sortBy: ItemSort;
@@ -24,7 +31,7 @@ function matchesQuality(
   return true;
 }
 
-function matchesTags(item: TCRSItem, allowedTags: Record<string, boolean>): boolean {
+function matchesTags(item: TCRSItem, allowedTags: AllowedTags): boolean {
   if (item.tags.includes('The Sea') && allowedTags['The Sea'] === false) return false;
 
   const isThrifty = item.tags.includes('Thrifty Accessible');
@@ -41,7 +48,7 @@ function matchesTags(item: TCRSItem, allowedTags: Record<string, boolean>): bool
   const isNpcStore = item.tags.includes('NPC Store');
   const isCraftable = item.tags.includes('Craftable') || item.tags.includes('Easily Craftable Recipe');
   const isDrop = !isNpcStore && !isCraftable;
-  const allowCraft = allowedTags.Craftable !== false && allowedTags['Easily Craftable Recipe'] !== false;
+  const allowCraft = allowedTags.Craftable !== false;
 
   return (
     (isNpcStore && allowedTags['NPC Store'] !== false) ||
@@ -94,6 +101,6 @@ export function filterAndSortItems(items: TCRSItem[], options: ItemFilterOptions
     .sort((a, b) => compareItems(a, b, options.sortBy));
 }
 
-export const DEFAULT_ITEM_TAG_FILTERS: Record<string, boolean> = {
+export const DEFAULT_ITEM_TAG_FILTERS: AllowedTags = {
   ...DEFAULT_ALLOWED_TAGS,
 };

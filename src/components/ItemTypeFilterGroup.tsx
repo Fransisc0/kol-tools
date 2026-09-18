@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { ItemTypeKey } from '../types';
-import { TypeConfig } from '../utils/itemUtils';
+import { TypeConfig } from '../config/itemTypes';
 
 interface ItemTypeFilterGroupProps {
   title: string;

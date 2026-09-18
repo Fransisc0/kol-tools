@@ -1,19 +1,4 @@
-import React from 'react';
 import { TCRSItem, ItemTypeKey, FoodQualityFilter, BoozeQualityFilter } from '../types';
-import {
-  Utensils,
-  Wine,
-  Sparkles,
-  FlaskConical,
-  Crown,
-  Backpack,
-  Shirt,
-  Sword,
-  Shield,
-  Scissors,
-  Gem,
-  PawPrint,
-} from 'lucide-react';
 import { getMeaningfulItemModifiers, isFunctionallyUnchanged } from './itemSemantics';
 
 export { getMeaningfulItemModifiers } from './itemSemantics';
@@ -182,35 +167,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     const successful = document.execCommand('copy');
     document.body.removeChild(textArea);
     return successful;
-  } catch (err) {
-    console.error('Failed to copy to clipboard:', err);
+  } catch {
     return false;
   }
 }
-
-export interface TypeConfig {
-  key: ItemTypeKey;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-export const CONSUMABLE_TYPE_CONFIGS: TypeConfig[] = [
-  { key: 'food', label: 'Food', icon: Utensils },
-  { key: 'booze', label: 'Booze', icon: Wine },
-  { key: 'spleen', label: 'Spleen', icon: Sparkles },
-  { key: 'potion', label: 'Regular Potion', icon: FlaskConical },
-  { key: 'monsterManualPotion', label: 'Avatar Potion', icon: FlaskConical },
-];
-
-export const EQUIPMENT_TYPE_CONFIGS: TypeConfig[] = [
-  { key: 'hat', label: 'Hat', icon: Crown },
-  { key: 'container', label: 'Back', icon: Backpack },
-  { key: 'shirt', label: 'Shirt', icon: Shirt },
-  { key: 'weapon', label: 'Weapon', icon: Sword },
-  { key: 'offhand', label: 'Off-hand', icon: Shield },
-  { key: 'pants', label: 'Pants', icon: Scissors },
-  { key: 'accessory', label: 'Accessory', icon: Gem },
-  { key: 'familiar', label: 'Familiar Equipment', icon: PawPrint },
-];
-
-export const ALL_TYPE_CONFIGS: TypeConfig[] = [...CONSUMABLE_TYPE_CONFIGS, ...EQUIPMENT_TYPE_CONFIGS];

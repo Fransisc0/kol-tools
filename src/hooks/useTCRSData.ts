@@ -38,7 +38,6 @@ export function useTCRSData(selectedClass: string, selectedSign: string) {
       })
       .catch((err) => {
         if (!isCancelled && err instanceof Error && err.name !== 'AbortError') {
-          console.error('Failed to load TCRS data:', err);
           setError('Failed to load TCRS dataset. Please check your connection and try again.');
           setLoading(false);
           setIsColdStart(false);

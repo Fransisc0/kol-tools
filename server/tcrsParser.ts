@@ -5,6 +5,8 @@ import { getMonsterManualEntry } from '../src/data/monsterManualData';
 import { getItemZones } from './zoneData';
 import { createBaseItem, isEquipmentUse, isPotionUse, parseEffectMetadata } from './itemNormalization';
 import { createEmptyResponse } from './responseFactory';
+import { AsyncGate } from './asyncGate';
+import { clearTCRSDataSourceCache, getTCRSFileContent } from './tcrsDataSource';
 import { TimedLruCache } from './timedLruCache';
 
 interface ItemMeta {
@@ -42,6 +44,7 @@ const hermitItemSet = new Set([
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const responseCache = new TimedLruCache<TCRSDataResponse>(6, CACHE_TTL_MS);
 const inFlightResponses = new Map<string, Promise<TCRSDataResponse>>();
+const parserGate = new AsyncGate(2);
 
 function getProjectRoot(): string {
   return process.cwd();
@@ -90,8 +93,8 @@ export function loadReferenceData(): void {
       for (const s of list) {
         thriftyWhitelistSet.add(cleanItemName(s));
       }
-    } catch (e) {
-      console.error('Failed to parse thriftyWhitelist.json:', e);
+    } catch {
+      console.error(JSON.stringify({ level: 'error', event: 'thrifty_whitelist_parse_failed' }));
     }
   }
 
@@ -438,49 +441,6 @@ function sortByMostToLeast(items: TCRSItem[]): TCRSItem[] {
   return items.sort((a, b) => b.extractedNumericBonus - a.extractedNumericBonus);
 }
 
-const githubFileCache = new TimedLruCache<string>(18, CACHE_TTL_MS);
-
-async function getTCRSFileContent(filename: string): Promise<string | null> {
-  const root = getProjectRoot();
-  const localFile = path.join(root, 'data/kolmafia/tcrs', filename);
-
-  const cached = githubFileCache.get(filename);
-  if (cached) return cached;
-
-  if (process.env.TCRS_OFFLINE !== 'true') {
-    const githubUrl = `https://raw.githubusercontent.com/kolmafia/kolmafia/main/data/TCRS/${filename}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-    try {
-      const res = await fetch(githubUrl, { signal: controller.signal });
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.trim().length > 50) {
-          githubFileCache.set(filename, text);
-          return text;
-        }
-      }
-    } catch {
-      // The bundled dataset below keeps the service available when upstream is unavailable.
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  // Fallback to local file
-  if (fs.existsSync(localFile)) {
-    try {
-      const content = fs.readFileSync(localFile, 'utf-8');
-      githubFileCache.set(filename, content);
-      return content;
-    } catch (e) {
-      console.error(`Error reading local TCRS file ${localFile}:`, e);
-    }
-  }
-
-  return null;
-}
-
 async function parseTCRSFileUncached(className: string, moonSign: string): Promise<TCRSDataResponse> {
   const normClass = className.replace(/\s+/g, '_');
   const normSign = moonSign.replace(/\s+/g, '_');
@@ -564,7 +524,7 @@ async function parseTCRSFileUncached(className: string, moonSign: string): Promi
         }
       }
       if (isSeaItem) {
-        tags.push('The Sea' as any);
+        tags.push('The Sea');
       }
 
       let isMonsterManualPotion = false;
@@ -1224,7 +1184,8 @@ export async function parseTCRSFile(className: string, moonSign: string): Promis
   const pending = inFlightResponses.get(cacheKey);
   if (pending) return pending;
 
-  const request = parseTCRSFileUncached(className, moonSign)
+  const request = parserGate
+    .run(() => parseTCRSFileUncached(className, moonSign))
     .then((response) => {
       responseCache.set(cacheKey, response);
       return response;
@@ -1239,6 +1200,6 @@ export async function parseTCRSFile(className: string, moonSign: string): Promis
 
 export function clearTCRSCaches(): void {
   responseCache.clear();
-  githubFileCache.clear();
+  clearTCRSDataSourceCache();
   inFlightResponses.clear();
 }

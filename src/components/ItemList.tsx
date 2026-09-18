@@ -1,37 +1,25 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
+  AllowedTags,
+  AllowedTagKey,
   BoozeQualityFilter,
   DEFAULT_ALLOWED_TYPES,
   FoodQualityFilter,
-  ItemTagType,
   ItemTypeKey,
   TCRSItem,
 } from '../types';
-import {
-  getItemType,
-  CONSUMABLE_TYPE_CONFIGS,
-  EQUIPMENT_TYPE_CONFIGS,
-  ALL_TYPE_CONFIGS,
-} from '../utils/itemUtils';
-import { DEFAULT_ITEM_TAG_FILTERS, filterAndSortItems, ItemSort } from '../utils/itemFiltering';
+import { getItemType } from '../utils/itemUtils';
+import { ALL_TYPE_CONFIGS, CONSUMABLE_TYPE_CONFIGS, EQUIPMENT_TYPE_CONFIGS } from '../config/itemTypes';
+import { DEFAULT_ITEM_TAG_FILTERS } from '../utils/itemFiltering';
 import { ItemCard } from './ItemCard';
 import { ItemRow } from './ItemRow';
 import { SearchableFilterSelect } from './SearchableFilterSelect';
 import { ItemLayout } from '../hooks/usePreferences';
-import {
-  Store,
-  Hammer,
-  CheckCircle2,
-  Ban,
-  Utensils,
-  Wine,
-  Sparkles,
-  SlidersHorizontal,
-  LayoutGrid,
-  List,
-} from 'lucide-react';
+import { Utensils, Wine, Sparkles, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { PaginationControls } from './PaginationControls';
-import { ItemListToolbar, PageSize } from './ItemListToolbar';
+import { ItemListToolbar } from './ItemListToolbar';
+import { useItemListState } from '../hooks/useItemListState';
+import { ItemListDesktopFilters } from './ItemListDesktopFilters';
 
 export type { ItemTypeKey, FoodQualityFilter };
 export { getItemType, CONSUMABLE_TYPE_CONFIGS, EQUIPMENT_TYPE_CONFIGS };
@@ -43,8 +31,8 @@ export interface ItemListProps {
   subtitle?: string;
   items: TCRSItem[];
   categoryKey: string;
-  allowedTags?: Record<string, boolean>;
-  setAllowedTags?: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  allowedTags?: AllowedTags;
+  setAllowedTags?: React.Dispatch<React.SetStateAction<AllowedTags>>;
   allowedTypes?: Record<ItemTypeKey, boolean>;
   setAllowedTypes?: React.Dispatch<React.SetStateAction<Record<ItemTypeKey, boolean>>>;
   showUnchangedItems?: boolean;
@@ -89,8 +77,7 @@ export const ItemList: React.FC<ItemListProps> = ({
   onOpenFilters,
   activeFilterCount,
 }) => {
-  const [internalAllowedTags, setInternalAllowedTags] =
-    useState<Record<string, boolean>>(DEFAULT_ITEM_TAG_FILTERS);
+  const [internalAllowedTags, setInternalAllowedTags] = useState<AllowedTags>(DEFAULT_ITEM_TAG_FILTERS);
   const [internalAllowedTypes, setInternalAllowedTypes] =
     useState<Record<ItemTypeKey, boolean>>(defaultTypes);
   const [internalFoodQuality, setInternalFoodQuality] = useState<FoodQualityFilter>('awesome-plus');
@@ -100,7 +87,7 @@ export const ItemList: React.FC<ItemListProps> = ({
   const itemLayout = propsItemLayout ?? internalItemLayout;
   const setItemLayout = propsSetItemLayout ?? setInternalItemLayout;
 
-  const allowedTags: Record<string, boolean> = useMemo(
+  const allowedTags: AllowedTags = useMemo(
     () => ({
       ...DEFAULT_ITEM_TAG_FILTERS,
       ...(propsSetAllowedTags ? propsAllowedTags || {} : internalAllowedTags || {}),
@@ -125,33 +112,31 @@ export const ItemList: React.FC<ItemListProps> = ({
   const boozeQualityFilter = propsBoozeQualityFilter ?? internalBoozeQuality;
   const setBoozeQualityFilter = propsSetBoozeQualityFilter || setInternalBoozeQuality;
 
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Items per page option: 24, 48, 96, 'all' (default 24)
-  const [pageSize, setPageSize] = useState<PageSize>(24);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Sorting: Automatically organized in order of most to least of their effect by default
-  const [sortBy, setSortBy] = useState<ItemSort>('bonus_desc');
-
-  // Reset pagination to page 1 whenever any filter or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [
+  const {
     searchQuery,
+    setSearchQuery,
+    pageSize,
+    setPageSize,
+    currentPage,
+    setCurrentPage,
     sortBy,
+    setSortBy,
+    totalItems,
+    totalPages,
+    paginatedItems,
+  } = useItemListState({
+    items,
+    categoryKey,
+    activeSubCategory,
+    allowedTags,
+    allowedTypes,
     showUnchangedItems,
     foodQualityFilter,
     boozeQualityFilter,
-    allowedTags,
-    allowedTypes,
-    categoryKey,
-    activeSubCategory,
-    pageSize,
-  ]);
+  });
 
   // Toggle single tag
-  const toggleTag = (tag: ItemTagType) => {
+  const toggleTag = (tag: AllowedTagKey) => {
     setAllowedTags((prev) => {
       const base = prev || DEFAULT_ITEM_TAG_FILTERS;
       return {
@@ -169,6 +154,7 @@ export const ItemList: React.FC<ItemListProps> = ({
       'NPC Store': true,
       Craftable: true,
       'Non-Thrifty': false,
+      'Drops / Other': true,
       'The Sea': true,
     });
     setCurrentPage(1);
@@ -180,6 +166,7 @@ export const ItemList: React.FC<ItemListProps> = ({
       'NPC Store': true,
       Craftable: true,
       'Non-Thrifty': true,
+      'Drops / Other': true,
       'The Sea': true,
     });
     setCurrentPage(1);
@@ -262,40 +249,6 @@ export const ItemList: React.FC<ItemListProps> = ({
     if (existing.length > 0) return existing;
     return ALL_TYPE_CONFIGS.filter((c) => c.key !== 'other');
   }, [typeCounts]);
-
-  const processedItems = useMemo(
-    () =>
-      filterAndSortItems(items, {
-        showUnchangedItems,
-        foodQualityFilter,
-        boozeQualityFilter,
-        allowedTags,
-        allowedTypes,
-        searchQuery,
-        sortBy,
-      }),
-    [
-      items,
-      showUnchangedItems,
-      foodQualityFilter,
-      boozeQualityFilter,
-      allowedTags,
-      allowedTypes,
-      searchQuery,
-      sortBy,
-    ],
-  );
-
-  // Pagination calculation
-  const totalItems = processedItems.length;
-  const effectivePageSize = pageSize === 'all' ? totalItems || 1 : pageSize;
-  const totalPages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(totalItems / effectivePageSize));
-
-  const paginatedItems = useMemo(() => {
-    if (pageSize === 'all') return processedItems;
-    const start = (currentPage - 1) * effectivePageSize;
-    return processedItems.slice(start, start + effectivePageSize);
-  }, [processedItems, currentPage, effectivePageSize, pageSize]);
 
   return (
     <div className="flex flex-col h-full min-w-0">
@@ -436,179 +389,19 @@ export const ItemList: React.FC<ItemListProps> = ({
           </div>
         </div>
 
-        {/* Row 2 (Desktop only): Availability & Sources Filters */}
-        <div className="hidden md:flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-xs">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-slate-400 font-medium text-[11px] mr-0.5">Availability:</span>
-
-            <button
-              type="button"
-              onClick={() => toggleTag('Thrifty Accessible')}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                allowedTags['Thrifty Accessible']
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-semibold'
-                  : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <CheckCircle2
-                className={`w-3 h-3 ${allowedTags['Thrifty Accessible'] ? 'text-emerald-600' : 'text-slate-300'}`}
-              />
-              <span>Thrifty</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleTag('Non-Thrifty')}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                allowedTags['Non-Thrifty']
-                  ? 'bg-rose-50 text-rose-800 border-rose-300 font-semibold'
-                  : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Ban className={`w-3 h-3 ${allowedTags['Non-Thrifty'] ? 'text-rose-600' : 'text-slate-300'}`} />
-              <span>Non-Thrifty</span>
-            </button>
-
-            <span className="text-slate-200 mx-0.5">|</span>
-
-            <button
-              type="button"
-              onClick={() => toggleTag('NPC Store')}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                allowedTags['NPC Store']
-                  ? 'bg-blue-50 text-blue-800 border-blue-300 font-semibold'
-                  : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Store className={`w-3 h-3 ${allowedTags['NPC Store'] ? 'text-blue-600' : 'text-slate-300'}`} />
-              <span>NPC Store</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleTag('Craftable')}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                allowedTags['Craftable']
-                  ? 'bg-amber-50 text-amber-900 border-amber-300 font-semibold'
-                  : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Hammer
-                className={`w-3 h-3 ${allowedTags['Craftable'] ? 'text-amber-600' : 'text-slate-300'}`}
-              />
-              <span>Craftable</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleTag('Drops / Other')}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                allowedTags['Drops / Other']
-                  ? 'bg-slate-100 text-slate-800 border-slate-300 font-semibold'
-                  : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Sparkles
-                className={`w-3 h-3 ${allowedTags['Drops / Other'] ? 'text-slate-600' : 'text-slate-300'}`}
-              />
-              <span>Drops</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => toggleTag('The Sea')}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border transition-colors cursor-pointer ${
-                allowedTags['The Sea']
-                  ? 'bg-teal-50 text-teal-800 border-teal-300 font-semibold'
-                  : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <span>🌊 The Sea</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-[11px] ml-auto">
-            <button
-              type="button"
-              onClick={setThriftyOnly}
-              className="text-blue-600 hover:underline font-medium cursor-pointer"
-            >
-              Thrifty Only
-            </button>
-            <span className="text-slate-300">·</span>
-            <button
-              type="button"
-              onClick={selectAllTags}
-              className="text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
-            >
-              All Sources
-            </button>
-          </div>
-        </div>
-
-        {/* Row 3 (Desktop only): Item Types Filter (Chips with live counts) */}
-        <div className="hidden md:flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-slate-100 text-xs">
-          <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-0.5 max-w-full">
-            <span className="text-slate-400 font-medium text-[11px] mr-0.5 shrink-0">Types:</span>
-
-            {availableTypes.map((cfg) => {
-              const Icon = cfg.icon;
-              const isAllowed = Boolean(allowedTypes[cfg.key]);
-              const count = typeCounts[cfg.key] || 0;
-
-              return (
-                <button
-                  type="button"
-                  key={cfg.key}
-                  onClick={() => toggleType(cfg.key)}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all cursor-pointer shrink-0 ${
-                    isAllowed
-                      ? 'bg-slate-800 text-white border-slate-800 shadow-2xs font-semibold'
-                      : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <Icon className={`w-3 h-3 ${isAllowed ? 'text-white' : 'text-slate-400'}`} />
-                  <span>{cfg.label}</span>
-                  {count > 0 && (
-                    <span
-                      className={`text-[10px] px-1 py-0.2 rounded-full ${
-                        isAllowed ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center gap-1.5 text-[11px] ml-auto shrink-0">
-            <button
-              type="button"
-              onClick={selectConsumablesOnly}
-              className="text-amber-700 hover:underline font-medium cursor-pointer"
-            >
-              Consumables
-            </button>
-            <span className="text-slate-300">·</span>
-            <button
-              type="button"
-              onClick={selectGearOnly}
-              className="text-blue-600 hover:underline font-medium cursor-pointer"
-            >
-              Gear
-            </button>
-            <span className="text-slate-300">·</span>
-            <button
-              type="button"
-              onClick={selectAllTypes}
-              className="text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
-            >
-              All Types
-            </button>
-          </div>
-        </div>
+        <ItemListDesktopFilters
+          allowedTags={allowedTags}
+          allowedTypes={allowedTypes}
+          availableTypes={availableTypes}
+          typeCounts={typeCounts}
+          onToggleTag={toggleTag}
+          onToggleType={toggleType}
+          onThriftyOnly={setThriftyOnly}
+          onAllSources={selectAllTags}
+          onConsumablesOnly={selectConsumablesOnly}
+          onGearOnly={selectGearOnly}
+          onAllTypes={selectAllTypes}
+        />
 
         <ItemListToolbar
           searchQuery={searchQuery}

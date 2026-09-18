@@ -1,10 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import { ClassSignSelector } from './ClassSignSelector';
-import { BoozeQualityFilter, FoodQualityFilter, ItemTypeKey, ThriftyMode } from '../types';
-import { CONSUMABLE_TYPE_CONFIGS, EQUIPMENT_TYPE_CONFIGS } from '../utils/itemUtils';
-import { Filter, Tag, Check, X, Layers, Utensils, Shield, Coins, Store, Wine } from 'lucide-react';
+import {
+  AllowedTagKey,
+  AllowedTags,
+  BoozeQualityFilter,
+  FoodQualityFilter,
+  ItemTypeKey,
+  ThriftyMode,
+} from '../types';
+import { CONSUMABLE_TYPE_CONFIGS, EQUIPMENT_TYPE_CONFIGS } from '../config/itemTypes';
+import { Filter, Tag, Check, X, Layers, Utensils, Shield, Coins, Store } from 'lucide-react';
 import { CLASSES, MOON_SIGNS } from '../data/constants';
 import { ItemTypeFilterGroup } from './ItemTypeFilterGroup';
+import { SidebarQualityFilters } from './SidebarQualityFilters';
+import { UnchangedItemsToggle } from './UnchangedItemsToggle';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -15,8 +24,8 @@ interface SidebarProps {
   setSelectedSign: (val: string) => void;
   onlyEpicNpcCombo: boolean;
   setOnlyEpicNpcCombo: (val: boolean) => void;
-  allowedTags: Record<string, boolean>;
-  toggleTag: (tag: string) => void;
+  allowedTags: AllowedTags;
+  toggleTag: (tag: AllowedTagKey) => void;
   thriftyMode?: ThriftyMode;
   setThriftyMode?: (mode: ThriftyMode) => void;
   allowedTypes: Record<ItemTypeKey, boolean>;
@@ -375,108 +384,14 @@ export function Sidebar({
               columns="grid-cols-2 sm:grid-cols-4"
             />
 
-            {/* Subsection 3: Food Quality */}
-            {foodQualityFilter && setFoodQualityFilter && (
-              <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Utensils className="w-3.5 h-3.5 text-amber-600" />
-                    Food Quality Threshold
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {(
-                    [
-                      { id: 'awesome-plus', label: 'Awesome+' },
-                      { id: 'epic', label: 'EPIC Only' },
-                      { id: 'awesome', label: 'Awesome' },
-                      { id: 'all', label: 'All Qualities' },
-                    ] as const
-                  ).map((q) => (
-                    <button
-                      type="button"
-                      key={q.id}
-                      onClick={() => setFoodQualityFilter(q.id)}
-                      className={`p-2 rounded-lg border text-xs font-semibold transition-all text-center cursor-pointer ${
-                        foodQualityFilter === q.id
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            <SidebarQualityFilters
+              foodQualityFilter={foodQualityFilter}
+              setFoodQualityFilter={setFoodQualityFilter}
+              boozeQualityFilter={boozeQualityFilter}
+              setBoozeQualityFilter={setBoozeQualityFilter}
+            />
 
-            {boozeQualityFilter && setBoozeQualityFilter && (
-              <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Wine className="w-3.5 h-3.5 text-purple-600" />
-                    Booze Quality
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {(
-                    [
-                      { id: 'epic', label: 'EPIC Only' },
-                      { id: 'all', label: 'All Booze' },
-                    ] as const
-                  ).map((quality) => (
-                    <button
-                      type="button"
-                      key={quality.id}
-                      onClick={() => setBoozeQualityFilter(quality.id)}
-                      className={`p-2 rounded-lg border text-xs font-semibold transition-all text-center cursor-pointer ${
-                        boozeQualityFilter === quality.id
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
-                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {quality.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Subsection 4: Display Options (Show unchanged items) */}
-            <div className="pt-1">
-              <label
-                className={`flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-all ${
-                  showUnchangedItems
-                    ? 'bg-blue-50/50 border-blue-200 text-slate-900 shadow-2xs'
-                    : 'bg-slate-50/50 border-slate-200 text-slate-700 hover:bg-slate-100/70'
-                }`}
-              >
-                <div
-                  className={`mt-0.5 flex items-center justify-center w-4 h-4 rounded shadow-2xs border transition-colors shrink-0 ${
-                    showUnchangedItems
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-slate-300 text-transparent'
-                  }`}
-                >
-                  <Check className="w-3 h-3" strokeWidth={3} />
-                </div>
-                <input
-                  type="checkbox"
-                  id="filter-show-unchanged-items"
-                  className="hidden"
-                  checked={showUnchangedItems}
-                  onChange={(e) => setShowUnchangedItems(e.target.checked)}
-                />
-                <div className="flex-1">
-                  <span className="text-xs font-bold text-slate-900 block leading-tight">
-                    Show unchanged items
-                  </span>
-                  <p className="text-[11px] text-slate-500 mt-0.5 leading-normal">
-                    Include items whose TCRS result does not meaningfully differ from the original item.
-                  </p>
-                </div>
-              </label>
-            </div>
+            <UnchangedItemsToggle checked={showUnchangedItems} onChange={setShowUnchangedItems} />
           </div>
         </div>
 
