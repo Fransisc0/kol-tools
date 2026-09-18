@@ -67,6 +67,23 @@ export function decodeHtmlEntities(value: string): string {
   });
 }
 
+const LOOKUP_ENTITIES: Readonly<Record<string, string>> = {
+  '&trade': '™',
+  '&trade;': '™',
+  '&quot;': '"',
+  '&amp;': '&',
+  '&eacute;': 'é',
+  '&#39;': "'",
+};
+
+/** Decodes the small legacy entity set used by KoLmafia lookup keys in exactly one pass. */
+export function decodeLookupEntities(value: string): string {
+  return value.replace(
+    /&(?:trade;?|quot;|amp;|eacute;|#39;)/g,
+    (entity) => LOOKUP_ENTITIES[entity] ?? entity,
+  );
+}
+
 export function hasGenericFamiliarEffect(modifiers?: string): boolean {
   return /(?:^|,\s*)Familiar Effect\s*:/i.test(modifiers || '');
 }

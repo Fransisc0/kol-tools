@@ -1,3 +1,5 @@
+import { decodeLookupEntities } from '../../../utils/itemSemantics';
+
 export interface ItemMetadata {
   name: string;
   image: string;
@@ -36,12 +38,5 @@ export function deserializeReferenceData(data: SerializedReferenceData): Referen
 }
 
 export function normalizeLookupName(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/&trade;?/g, '™')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&eacute;/g, 'é')
-    .replace(/&#39;/g, "'")
-    .trim();
+  return decodeLookupEntities(value.toLowerCase()).trim();
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { TCRSItem } from '../types';
-import { decodeHtmlEntities, getMeaningfulItemModifiers, isFunctionallyUnchanged } from './itemSemantics';
+import {
+  decodeHtmlEntities,
+  decodeLookupEntities,
+  getMeaningfulItemModifiers,
+  isFunctionallyUnchanged,
+} from './itemSemantics';
 
 function item(overrides: Partial<TCRSItem> = {}): TCRSItem {
   return {
@@ -71,5 +76,10 @@ describe('modifier and entity normalization', () => {
 
   it('decodes named and numeric HTML entities', () => {
     expect(decodeHtmlEntities('Ben-Gal&trade; and jalape&ntilde;o &#332;')).toBe('Ben-Gal™ and jalapeño Ō');
+  });
+
+  it('decodes lookup entities once while preserving legacy trademark syntax', () => {
+    expect(decodeLookupEntities('&trade &trade; &quot; &amp; &eacute; &#39;')).toBe('™ ™ " & é \'');
+    expect(decodeLookupEntities('&amp;quot;')).toBe('&quot;');
   });
 });

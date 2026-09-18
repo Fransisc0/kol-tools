@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { decodeLookupEntities } from '../../src/utils/itemSemantics';
 
 export interface ItemMetadata {
   name: string;
@@ -18,14 +19,7 @@ export interface BuildReferenceData {
 let cachedReferenceData: BuildReferenceData | undefined;
 
 export function normalizeLookupName(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/&trade;?/g, '™')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&eacute;/g, 'é')
-    .replace(/&#39;/g, "'")
-    .trim();
+  return decodeLookupEntities(value.toLowerCase()).trim();
 }
 
 function addValue(map: Map<string, string[]>, key: string, value: string): void {
