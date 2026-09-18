@@ -2,6 +2,16 @@
   "name": "kol-tools",
   "private": true,
   "version": "1.0.0",
+  "description": "Privacy-conscious, open-source tools for Kingdom of Loathing players.",
+  "license": "BSD-3-Clause",
+  "homepage": "https://fransisc0.github.io/kol-tools/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fransisc0/kol-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Fransisc0/kol-tools/issues"
+  },
   "type": "module",
   "packageManager": "npm@10.9.2",
   "engines": {
