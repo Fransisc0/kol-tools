@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_API_BASE_URL: https://fransisc0-kol-tools-tcrs-api.onrender.com
+      - run: npm run verify:pages
+      - run: npm run verify:privacy
+      - run: npm audit --omit=dev --audit-level=high

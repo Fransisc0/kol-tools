@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fransisc0.github.io/kol-tools/sitemap.xml

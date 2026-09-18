@@ -1,0 +1,9 @@
+data/
+dist/
+coverage/
+node_modules/
+scripts/legacy/
+server/thriftyRaw.txt
+server/thriftyWhitelist.json
+package-lock.json
+zone_mapping.json

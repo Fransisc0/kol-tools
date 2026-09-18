@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="110" y1="70" x2="1090" y2="560" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eff6ff"/>
+      <stop offset="1" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#f8fafc"/>
+  <rect x="72" y="72" width="1056" height="486" rx="44" fill="url(#bg)" stroke="#bfdbfe" stroke-width="3"/>
+  <rect x="132" y="132" width="112" height="112" rx="28" fill="#2563eb"/>
+  <path d="m160 165 28-14 28 14-28 14-28-14Zm0 20 28 14 28-14m-56 20 28 14 28-14" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="286" y="179" font-family="system-ui, sans-serif" font-size="34" font-weight="700" fill="#2563eb">KOL TOOLS</text>
+  <text x="132" y="340" font-family="system-ui, sans-serif" font-size="72" font-weight="800" fill="#0f172a">TCRS Data Viewer</text>
+  <text x="132" y="414" font-family="system-ui, sans-serif" font-size="34" fill="#475569">Explore transformed items by purpose, store, and zone.</text>
+  <text x="132" y="488" font-family="ui-monospace, monospace" font-size="25" fill="#64748b">fransisc0.github.io/kol-tools/tcrs/</text>
+</svg>
