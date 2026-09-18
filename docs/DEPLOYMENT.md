@@ -9,7 +9,6 @@ The Pages workflow runs `npm ci` and `npm run verify`, configures Pages, uploads
 Public layout:
 
 - `/kol-tools/` — tools hub
-- `/kol-tools/privacy.html` — privacy statement
 - `/kol-tools/tcrs/` — TCRS viewer
 
 To inspect the exact artifact locally:

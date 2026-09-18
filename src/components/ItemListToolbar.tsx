@@ -1,5 +1,4 @@
-import { ArrowUpDown, LayoutGrid, List, Search, X } from 'lucide-react';
-import { ItemLayout } from '../hooks/usePreferences';
+import { ArrowUpDown, Search, X } from 'lucide-react';
 import { ItemSort } from '../utils/itemFiltering';
 
 export type PageSize = number | 'all';
@@ -11,8 +10,6 @@ interface ItemListToolbarProps {
   onSortChange: (value: ItemSort) => void;
   pageSize: PageSize;
   onPageSizeChange: (value: PageSize) => void;
-  itemLayout: ItemLayout;
-  onLayoutChange: (value: ItemLayout) => void;
 }
 
 export function ItemListToolbar({
@@ -22,8 +19,6 @@ export function ItemListToolbar({
   onSortChange,
   pageSize,
   onPageSizeChange,
-  itemLayout,
-  onLayoutChange,
 }: ItemListToolbarProps) {
   return (
     <div className="flex flex-col items-stretch justify-between gap-1.5 border-t border-slate-100 pt-1.5 sm:flex-row sm:items-center">
@@ -80,27 +75,6 @@ export function ItemListToolbar({
           <option value="96">96 / pg</option>
           <option value="all">All</option>
         </select>
-
-        <div className="hidden shrink-0 items-center rounded-lg border border-slate-200 bg-slate-100 p-0.5 md:flex">
-          {(
-            [
-              ['card', LayoutGrid, 'Cards view'],
-              ['line', List, 'Line view'],
-            ] as const
-          ).map(([layout, Icon, label]) => (
-            <button
-              key={layout}
-              type="button"
-              onClick={() => onLayoutChange(layout)}
-              title={label}
-              aria-label={label}
-              aria-pressed={itemLayout === layout}
-              className={`flex min-h-[34px] min-w-[34px] items-center justify-center rounded-md p-1.5 ${itemLayout === layout ? 'bg-white font-bold text-blue-600 shadow-2xs' : 'text-slate-400 hover:text-slate-700'}`}
-            >
-              <Icon className="h-4 w-4" />
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );

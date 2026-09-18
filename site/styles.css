@@ -43,35 +43,15 @@ footer {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
-.quiet-link {
-  color: #475569;
-  font-size: 14px;
-  font-weight: 650;
-  text-underline-offset: 4px;
-}
 .hero {
   padding: 92px 0 78px;
   max-width: 780px;
-}
-.eyebrow {
-  margin: 0 0 14px;
-  color: #2563eb;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
 }
 h1 {
   margin: 0;
   font-size: clamp(46px, 7vw, 78px);
   line-height: 0.98;
   letter-spacing: -0.055em;
-}
-.lede {
-  margin: 28px 0 0;
-  max-width: 650px;
-  color: #475569;
-  font-size: clamp(18px, 2.4vw, 23px);
-  line-height: 1.55;
 }
 .tools {
   padding-bottom: 80px;
@@ -117,7 +97,6 @@ h1 {
   box-shadow: 0 20px 55px rgba(37, 99, 235, 0.13);
 }
 .tool-card:focus-visible,
-.quiet-link:focus-visible,
 .brand:focus-visible {
   outline: 3px solid #60a5fa;
   outline-offset: 4px;

@@ -99,23 +99,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100/50 text-slate-800 font-sans flex flex-col antialiased relative">
-      {/* Floating Left Tab Trigger - Desktop / Tablet only (hidden on mobile to prevent overlapping items) */}
-      {!sidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          id="floating-left-tab-btn"
-          className="hidden md:flex fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-l-0 border-slate-300 hover:border-blue-400 rounded-r-xl py-3.5 px-2 shadow-lg flex-col items-center gap-2 transition-all group cursor-pointer"
-          title="Open Character Setup & Filters"
-          aria-label="Open Character Setup & Filters"
-        >
-          <Layers className="w-4 h-4 text-blue-600 group-hover:scale-115 transition-transform" />
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 group-hover:text-blue-600 [writing-mode:vertical-rl]">
-            Setup & Filters
-          </span>
-        </button>
-      )}
-
       {/* Top Navigation Bar - Responsive header without clipping */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs shrink-0">
         <div className="w-full px-3 sm:px-4 py-2.5 sm:py-0 sm:h-14 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
@@ -145,12 +128,6 @@ export default function App() {
 
           {/* Mobile Row 2 / Desktop Right: Group By Dropdown */}
           <div className="flex w-full sm:w-auto sm:max-w-xs items-center gap-2 min-w-0">
-            <a
-              href="../privacy.html"
-              className="hidden text-xs font-semibold text-slate-500 underline-offset-4 hover:text-blue-700 hover:underline lg:inline"
-            >
-              Privacy
-            </a>
             <label className="text-xs font-bold text-slate-500 whitespace-nowrap shrink-0">Group By:</label>
             <select
               value={groupingMode}

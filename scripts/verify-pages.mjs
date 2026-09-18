@@ -2,7 +2,7 @@ import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const pagesDirectory = path.join(process.cwd(), 'dist', 'pages');
-const required = ['index.html', 'privacy.html', 'robots.txt', 'sitemap.xml', 'tcrs/index.html'];
+const required = ['index.html', 'robots.txt', 'sitemap.xml', 'tcrs/index.html'];
 
 for (const relativePath of required) {
   await access(path.join(pagesDirectory, relativePath));
@@ -19,7 +19,7 @@ if (!appHtml.includes("connect-src 'self'")) {
   throw new Error('The TCRS client CSP must restrict data requests to the Pages origin.');
 }
 
-for (const page of ['index.html', 'privacy.html']) {
+for (const page of ['index.html']) {
   const html = await readFile(path.join(pagesDirectory, page), 'utf8');
   if (!html.includes('http-equiv="Content-Security-Policy"')) {
     throw new Error(`${page} is missing its Content Security Policy.`);
