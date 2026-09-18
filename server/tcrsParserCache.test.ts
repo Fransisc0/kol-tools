@@ -23,5 +23,6 @@ describe('TCRS response caching', () => {
 
     expect(first).toBe(second);
     expect(first.allItems.length).toBeGreaterThan(0);
-  });
+    expect(first.turnGeneration.booze.some((item) => item.quality.toLowerCase() !== 'epic')).toBe(true);
+  }, 15_000);
 });

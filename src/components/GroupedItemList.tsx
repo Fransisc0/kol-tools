@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { TCRSDataResponse, TCRSItem } from '../types';
-import { ItemList, ItemTypeKey, FoodQualityFilter } from './ItemList';
+import { BoozeQualityFilter, FoodQualityFilter, ItemTypeKey, TCRSDataResponse, TCRSItem } from '../types';
+import { ItemList } from './ItemList';
 import { ItemLayout } from '../hooks/usePreferences';
 import { categorizeNPCStore } from '../npcStoreMapping';
 import { categorizeZone } from '../zoneMapping';
@@ -17,6 +17,8 @@ interface GroupedItemListProps {
   showUnchangedItems?: boolean;
   foodQualityFilter: FoodQualityFilter;
   setFoodQualityFilter: (val: FoodQualityFilter) => void;
+  boozeQualityFilter: BoozeQualityFilter;
+  setBoozeQualityFilter: (val: BoozeQualityFilter) => void;
   subCategoryTabs?: { id: string; label: string }[];
   onSelectSubCategory?: (id: string) => void;
   itemLayout?: ItemLayout;
@@ -37,6 +39,8 @@ export function GroupedItemList({
   showUnchangedItems,
   foodQualityFilter,
   setFoodQualityFilter,
+  boozeQualityFilter,
+  setBoozeQualityFilter,
   subCategoryTabs,
   onSelectSubCategory,
   itemLayout,
@@ -137,6 +141,8 @@ export function GroupedItemList({
       showUnchangedItems={showUnchangedItems}
       foodQualityFilter={foodQualityFilter}
       setFoodQualityFilter={setFoodQualityFilter}
+      boozeQualityFilter={boozeQualityFilter}
+      setBoozeQualityFilter={setBoozeQualityFilter}
       categoryKey={mode === 'All' ? 'all' : 'grouped'}
       subCategoryTabs={subCategoryTabs}
       subCategoryLabel={mode === 'NPC Store' ? 'Store' : 'Zone'}

@@ -625,13 +625,14 @@ async function parseTCRSFileUncached(className: string, moonSign: string): Promi
         });
       }
 
-      // Booze (only include EPIC quality)
-      if (quality === 'EPIC' && (primaryUse === 'drink' || forcedType === 'drink')) {
+      // Include every booze quality; the client defaults to an EPIC-only view.
+      if (primaryUse === 'drink' || forcedType === 'drink') {
+        const qualityLabel = quality.trim() || 'Unknown quality';
         response.turnGeneration.booze.push({
           ...baseItem,
           extractedNumericBonus: size,
-          extractedBonus: `Size ${size}`,
-          extractedStat: `EPIC Booze (Size ${size})`,
+          extractedBonus: `${qualityLabel} (Size ${size})`,
+          extractedStat: `${qualityLabel} Booze (Size ${size})`,
         });
       }
 

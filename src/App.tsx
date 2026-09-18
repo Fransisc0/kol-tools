@@ -4,6 +4,7 @@ import {
   DEFAULT_ALLOWED_TAGS,
   DEFAULT_THRIFTY_MODE,
   DEFAULT_FOOD_QUALITY_FILTER,
+  DEFAULT_BOOZE_QUALITY_FILTER,
   DEFAULT_SHOW_UNCHANGED_ITEMS,
 } from './types';
 import type { ItemTypeKey } from './components/ItemList';
@@ -40,6 +41,8 @@ export default function App() {
     setShowUnchangedItems,
     foodQualityFilter,
     setFoodQualityFilter,
+    boozeQualityFilter,
+    setBoozeQualityFilter,
     toggleTag,
     toggleType,
     resetFilters,
@@ -60,6 +63,7 @@ export default function App() {
     if (thriftyMode !== DEFAULT_THRIFTY_MODE) count++;
     if (showUnchangedItems !== DEFAULT_SHOW_UNCHANGED_ITEMS) count++;
     if (foodQualityFilter !== DEFAULT_FOOD_QUALITY_FILTER) count++;
+    if (boozeQualityFilter !== DEFAULT_BOOZE_QUALITY_FILTER) count++;
 
     // Check if item types have been modified away from default
     const hasTypeChanges = (Object.keys(DEFAULT_ALLOWED_TYPES) as ItemTypeKey[]).some(
@@ -74,7 +78,15 @@ export default function App() {
     if (hasTagChanges) count++;
 
     return count;
-  }, [onlyEpicNpcCombo, thriftyMode, showUnchangedItems, foodQualityFilter, allowedTypes, allowedTags]);
+  }, [
+    onlyEpicNpcCombo,
+    thriftyMode,
+    showUnchangedItems,
+    foodQualityFilter,
+    boozeQualityFilter,
+    allowedTypes,
+    allowedTags,
+  ]);
 
   const handleSelectSection = (section: string) => {
     setActiveSection(section);
@@ -190,6 +202,8 @@ export default function App() {
         setShowUnchangedItems={setShowUnchangedItems}
         foodQualityFilter={foodQualityFilter}
         setFoodQualityFilter={setFoodQualityFilter}
+        boozeQualityFilter={boozeQualityFilter}
+        setBoozeQualityFilter={setBoozeQualityFilter}
         onResetFilters={handleResetFilters}
       />
 
@@ -266,6 +280,8 @@ export default function App() {
               showUnchangedItems={showUnchangedItems}
               foodQualityFilter={foodQualityFilter}
               setFoodQualityFilter={setFoodQualityFilter}
+              boozeQualityFilter={boozeQualityFilter}
+              setBoozeQualityFilter={setBoozeQualityFilter}
               itemLayout={itemLayout}
               setItemLayout={setItemLayout}
               onOpenFilters={() => setSidebarOpen(true)}

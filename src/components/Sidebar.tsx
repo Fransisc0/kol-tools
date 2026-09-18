@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { ClassSignSelector } from './ClassSignSelector';
-import { ItemTypeKey, ThriftyMode, FoodQualityFilter } from '../types';
+import { BoozeQualityFilter, FoodQualityFilter, ItemTypeKey, ThriftyMode } from '../types';
 import { CONSUMABLE_TYPE_CONFIGS, EQUIPMENT_TYPE_CONFIGS } from '../utils/itemUtils';
-import { Filter, Tag, Check, X, Layers, Utensils, Shield, Coins, Store } from 'lucide-react';
+import { Filter, Tag, Check, X, Layers, Utensils, Shield, Coins, Store, Wine } from 'lucide-react';
 import { CLASSES, MOON_SIGNS } from '../data/constants';
 import { ItemTypeFilterGroup } from './ItemTypeFilterGroup';
 
@@ -25,6 +25,8 @@ interface SidebarProps {
   setShowUnchangedItems: (val: boolean) => void;
   foodQualityFilter?: FoodQualityFilter;
   setFoodQualityFilter?: (filter: FoodQualityFilter) => void;
+  boozeQualityFilter?: BoozeQualityFilter;
+  setBoozeQualityFilter?: (filter: BoozeQualityFilter) => void;
   onResetFilters?: () => void;
 }
 
@@ -49,6 +51,8 @@ export function Sidebar({
   setShowUnchangedItems,
   foodQualityFilter,
   setFoodQualityFilter,
+  boozeQualityFilter,
+  setBoozeQualityFilter,
   onResetFilters,
 }: SidebarProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -400,6 +404,38 @@ export function Sidebar({
                       }`}
                     >
                       {q.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {boozeQualityFilter && setBoozeQualityFilter && (
+              <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Wine className="w-3.5 h-3.5 text-purple-600" />
+                    Booze Quality
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {(
+                    [
+                      { id: 'epic', label: 'EPIC Only' },
+                      { id: 'all', label: 'All Booze' },
+                    ] as const
+                  ).map((quality) => (
+                    <button
+                      type="button"
+                      key={quality.id}
+                      onClick={() => setBoozeQualityFilter(quality.id)}
+                      className={`p-2 rounded-lg border text-xs font-semibold transition-all text-center cursor-pointer ${
+                        boozeQualityFilter === quality.id
+                          ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
+                          : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {quality.label}
                     </button>
                   ))}
                 </div>

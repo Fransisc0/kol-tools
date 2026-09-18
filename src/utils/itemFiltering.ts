@@ -1,4 +1,4 @@
-import { DEFAULT_ALLOWED_TAGS, FoodQualityFilter, ItemTypeKey, TCRSItem } from '../types';
+import { BoozeQualityFilter, DEFAULT_ALLOWED_TAGS, FoodQualityFilter, ItemTypeKey, TCRSItem } from '../types';
 import { getItemType, isBoozeQualityMatch, isFoodQualityMatch, isUnchangedItem } from './itemUtils';
 
 export type ItemSort = 'bonus_desc' | 'bonus_asc' | 'duration' | 'name' | 'id';
@@ -6,16 +6,21 @@ export type ItemSort = 'bonus_desc' | 'bonus_asc' | 'duration' | 'name' | 'id';
 export interface ItemFilterOptions {
   showUnchangedItems: boolean;
   foodQualityFilter: FoodQualityFilter;
+  boozeQualityFilter: BoozeQualityFilter;
   allowedTags: Record<string, boolean>;
   allowedTypes: Record<ItemTypeKey, boolean>;
   searchQuery: string;
   sortBy: ItemSort;
 }
 
-function matchesQuality(item: TCRSItem, foodQualityFilter: FoodQualityFilter): boolean {
+function matchesQuality(
+  item: TCRSItem,
+  foodQualityFilter: FoodQualityFilter,
+  boozeQualityFilter: BoozeQualityFilter,
+): boolean {
   const type = getItemType(item);
   if (type === 'food') return isFoodQualityMatch(item.quality, foodQualityFilter);
-  if (type === 'booze') return isBoozeQualityMatch(item.quality);
+  if (type === 'booze') return isBoozeQualityMatch(item.quality, boozeQualityFilter);
   return true;
 }
 
@@ -82,7 +87,7 @@ export function filterAndSortItems(items: TCRSItem[], options: ItemFilterOptions
   const query = options.searchQuery.trim().toLowerCase();
   return items
     .filter((item) => options.showUnchangedItems || !isUnchangedItem(item))
-    .filter((item) => matchesQuality(item, options.foodQualityFilter))
+    .filter((item) => matchesQuality(item, options.foodQualityFilter, options.boozeQualityFilter))
     .filter((item) => matchesTags(item, options.allowedTags))
     .filter((item) => Boolean(options.allowedTypes[getItemType(item)]))
     .filter((item) => matchesSearch(item, query))

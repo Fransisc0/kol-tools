@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
-import { TCRSDataResponse, TCRSItem } from '../types';
+import { BoozeQualityFilter, FoodQualityFilter, ItemTypeKey, TCRSDataResponse, TCRSItem } from '../types';
 import { GroupedItemList } from './GroupedItemList';
-import { ItemList, ItemTypeKey, FoodQualityFilter } from './ItemList';
+import { ItemList } from './ItemList';
 import { getSubCategoryTabs } from './NavigationTabs';
 import { ItemLayout } from '../hooks/usePreferences';
 
@@ -18,6 +18,8 @@ interface MainContentProps {
   showUnchangedItems?: boolean;
   foodQualityFilter: FoodQualityFilter;
   setFoodQualityFilter: (val: FoodQualityFilter) => void;
+  boozeQualityFilter: BoozeQualityFilter;
+  setBoozeQualityFilter: (val: BoozeQualityFilter) => void;
   itemLayout?: ItemLayout;
   setItemLayout?: (layout: ItemLayout) => void;
   onOpenFilters?: () => void;
@@ -37,6 +39,8 @@ export function MainContent({
   showUnchangedItems,
   foodQualityFilter,
   setFoodQualityFilter,
+  boozeQualityFilter,
+  setBoozeQualityFilter,
   itemLayout,
   setItemLayout,
   onOpenFilters,
@@ -69,6 +73,8 @@ export function MainContent({
         showUnchangedItems={showUnchangedItems}
         foodQualityFilter={foodQualityFilter}
         setFoodQualityFilter={setFoodQualityFilter}
+        boozeQualityFilter={boozeQualityFilter}
+        setBoozeQualityFilter={setBoozeQualityFilter}
         subCategoryTabs={subCategoryTabs}
         onSelectSubCategory={setActiveSubCategory}
         itemLayout={itemLayout}
@@ -91,6 +97,8 @@ export function MainContent({
       showUnchangedItems={showUnchangedItems}
       foodQualityFilter={foodQualityFilter}
       setFoodQualityFilter={setFoodQualityFilter}
+      boozeQualityFilter={boozeQualityFilter}
+      setBoozeQualityFilter={setBoozeQualityFilter}
       categoryKey={id}
       subCategoryTabs={subCategoryTabs}
       subCategoryLabel="Purpose"

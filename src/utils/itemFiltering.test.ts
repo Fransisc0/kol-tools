@@ -24,6 +24,7 @@ function item(overrides: Partial<TCRSItem> = {}): TCRSItem {
 const options: ItemFilterOptions = {
   showUnchangedItems: false,
   foodQualityFilter: 'all',
+  boozeQualityFilter: 'epic',
   allowedTags: { ...DEFAULT_ITEM_TAG_FILTERS },
   allowedTypes: { ...DEFAULT_ALLOWED_TYPES, other: true },
   searchQuery: '',
@@ -45,5 +46,70 @@ describe('filterAndSortItems', () => {
         showUnchangedItems: true,
       }),
     ).toHaveLength(2);
+  });
+
+  it('shows only EPIC booze by default', () => {
+    const epic = item({
+      id: 10,
+      origName: 'Epic booze',
+      primaryUse: 'drink',
+      isEquipment: false,
+      quality: 'EPIC',
+    });
+    const awesome = item({
+      id: 11,
+      origName: 'Awesome booze',
+      primaryUse: 'drink',
+      isEquipment: false,
+      quality: 'awesome',
+    });
+    const decent = item({
+      id: 12,
+      origName: 'Decent booze',
+      primaryUse: 'drink',
+      isEquipment: false,
+      quality: 'decent',
+    });
+
+    expect(filterAndSortItems([awesome, decent, epic], options)).toEqual([epic]);
+  });
+
+  it('restores every booze quality without changing the food filter', () => {
+    const epicBooze = item({
+      id: 20,
+      origName: 'Epic booze',
+      primaryUse: 'drink',
+      isEquipment: false,
+      quality: 'EPIC',
+    });
+    const goodBooze = item({
+      id: 21,
+      origName: 'Good booze',
+      primaryUse: 'drink',
+      isEquipment: false,
+      quality: 'good',
+    });
+    const epicFood = item({
+      id: 22,
+      origName: 'Epic food',
+      primaryUse: 'food',
+      isEquipment: false,
+      quality: 'EPIC',
+    });
+    const goodFood = item({
+      id: 23,
+      origName: 'Good food',
+      primaryUse: 'food',
+      isEquipment: false,
+      quality: 'good',
+    });
+
+    const result = filterAndSortItems([epicBooze, goodBooze, epicFood, goodFood], {
+      ...options,
+      boozeQualityFilter: 'all',
+      foodQualityFilter: 'epic',
+    });
+
+    expect(result).toEqual([epicBooze, epicFood, goodBooze]);
   });
 });

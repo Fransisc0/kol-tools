@@ -1,5 +1,5 @@
 import React from 'react';
-import { TCRSItem, ItemTypeKey, FoodQualityFilter } from '../types';
+import { TCRSItem, ItemTypeKey, FoodQualityFilter, BoozeQualityFilter } from '../types';
 import {
   Utensils,
   Wine,
@@ -129,10 +129,10 @@ export function isFoodQualityMatch(quality: string | undefined, filter: FoodQual
 }
 
 /**
- * Global booze quality rule: booze below EPIC quality is hidden by default.
+ * Booze defaults to EPIC-only but can be expanded to every quality.
  */
-export function isBoozeQualityMatch(quality: string | undefined): boolean {
-  return isEpicQuality(quality);
+export function isBoozeQualityMatch(quality: string | undefined, filter: BoozeQualityFilter): boolean {
+  return filter === 'all' || isEpicQuality(quality);
 }
 
 /**

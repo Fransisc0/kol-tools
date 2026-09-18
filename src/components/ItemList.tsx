@@ -1,5 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { TCRSItem, ItemTagType, ItemTypeKey, DEFAULT_ALLOWED_TYPES, FoodQualityFilter } from '../types';
+import {
+  BoozeQualityFilter,
+  DEFAULT_ALLOWED_TYPES,
+  FoodQualityFilter,
+  ItemTagType,
+  ItemTypeKey,
+  TCRSItem,
+} from '../types';
 import {
   getItemType,
   CONSUMABLE_TYPE_CONFIGS,
@@ -17,6 +24,7 @@ import {
   CheckCircle2,
   Ban,
   Utensils,
+  Wine,
   Sparkles,
   SlidersHorizontal,
   LayoutGrid,
@@ -42,6 +50,8 @@ export interface ItemListProps {
   showUnchangedItems?: boolean;
   foodQualityFilter?: FoodQualityFilter;
   setFoodQualityFilter?: (filter: FoodQualityFilter) => void;
+  boozeQualityFilter?: BoozeQualityFilter;
+  setBoozeQualityFilter?: (filter: BoozeQualityFilter) => void;
   subCategoryTabs?: { id: string; label: string }[];
   activeSubCategory?: string;
   onSelectSubCategory?: (id: string) => void;
@@ -66,6 +76,8 @@ export const ItemList: React.FC<ItemListProps> = ({
   showUnchangedItems = false,
   foodQualityFilter: propsFoodQualityFilter,
   setFoodQualityFilter: propsSetFoodQualityFilter,
+  boozeQualityFilter: propsBoozeQualityFilter,
+  setBoozeQualityFilter: propsSetBoozeQualityFilter,
   subCategoryTabs,
   activeSubCategory,
   onSelectSubCategory,
@@ -82,6 +94,7 @@ export const ItemList: React.FC<ItemListProps> = ({
   const [internalAllowedTypes, setInternalAllowedTypes] =
     useState<Record<ItemTypeKey, boolean>>(defaultTypes);
   const [internalFoodQuality, setInternalFoodQuality] = useState<FoodQualityFilter>('awesome-plus');
+  const [internalBoozeQuality, setInternalBoozeQuality] = useState<BoozeQualityFilter>('epic');
   const [internalItemLayout, setInternalItemLayout] = useState<ItemLayout>('card');
 
   const itemLayout = propsItemLayout ?? internalItemLayout;
@@ -109,6 +122,8 @@ export const ItemList: React.FC<ItemListProps> = ({
   const foodQualityFilter =
     propsFoodQualityFilter !== undefined ? propsFoodQualityFilter : internalFoodQuality;
   const setFoodQualityFilter = propsSetFoodQualityFilter || setInternalFoodQuality;
+  const boozeQualityFilter = propsBoozeQualityFilter ?? internalBoozeQuality;
+  const setBoozeQualityFilter = propsSetBoozeQualityFilter || setInternalBoozeQuality;
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -127,6 +142,7 @@ export const ItemList: React.FC<ItemListProps> = ({
     sortBy,
     showUnchangedItems,
     foodQualityFilter,
+    boozeQualityFilter,
     allowedTags,
     allowedTypes,
     categoryKey,
@@ -252,12 +268,22 @@ export const ItemList: React.FC<ItemListProps> = ({
       filterAndSortItems(items, {
         showUnchangedItems,
         foodQualityFilter,
+        boozeQualityFilter,
         allowedTags,
         allowedTypes,
         searchQuery,
         sortBy,
       }),
-    [items, showUnchangedItems, foodQualityFilter, allowedTags, allowedTypes, searchQuery, sortBy],
+    [
+      items,
+      showUnchangedItems,
+      foodQualityFilter,
+      boozeQualityFilter,
+      allowedTags,
+      allowedTypes,
+      searchQuery,
+      sortBy,
+    ],
   );
 
   // Pagination calculation
@@ -324,6 +350,34 @@ export const ItemList: React.FC<ItemListProps> = ({
                     }`}
                   >
                     {q.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {categoryKey === 'booze' && (
+              <div className="hidden md:flex items-center gap-1 pl-2 border-l border-slate-200 text-xs">
+                <Wine className="w-3.5 h-3.5 text-slate-400 mr-0.5" />
+                <span className="text-slate-500 font-medium text-[11px] mr-1">Quality:</span>
+                {(
+                  [
+                    { id: 'epic', label: 'EPIC' },
+                    { id: 'all', label: 'All' },
+                  ] as const
+                ).map((quality) => (
+                  <button
+                    type="button"
+                    key={quality.id}
+                    onClick={() => {
+                      setBoozeQualityFilter(quality.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-all cursor-pointer ${
+                      boozeQualityFilter === quality.id
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {quality.label}
                   </button>
                 ))}
               </div>

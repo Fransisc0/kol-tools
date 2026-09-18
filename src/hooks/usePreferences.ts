@@ -4,15 +4,24 @@ import {
   DEFAULT_ALLOWED_TAGS,
   DEFAULT_ALLOWED_TYPES,
   DEFAULT_FOOD_QUALITY_FILTER,
+  DEFAULT_BOOZE_QUALITY_FILTER,
   DEFAULT_SHOW_UNCHANGED_ITEMS,
   DEFAULT_THRIFTY_MODE,
   ThriftyMode,
   FoodQualityFilter,
+  BoozeQualityFilter,
 } from '../types';
 
 export type ItemLayout = 'card' | 'line';
 
 const VALID_FOOD_QUALITIES: ReadonlySet<string> = new Set(['awesome-plus', 'epic', 'awesome', 'all']);
+const VALID_BOOZE_QUALITIES: ReadonlySet<string> = new Set(['epic', 'all']);
+
+export function normalizeBoozeQualityFilter(value: string | null): BoozeQualityFilter {
+  return value && VALID_BOOZE_QUALITIES.has(value)
+    ? (value as BoozeQualityFilter)
+    : DEFAULT_BOOZE_QUALITY_FILTER;
+}
 
 type AllowedTags = { [K in keyof typeof DEFAULT_ALLOWED_TAGS]: boolean };
 
@@ -102,6 +111,14 @@ export function usePreferences() {
     return DEFAULT_FOOD_QUALITY_FILTER;
   });
 
+  const [boozeQualityFilter, setBoozeQualityFilter] = useState<BoozeQualityFilter>(() => {
+    try {
+      return normalizeBoozeQualityFilter(localStorage.getItem('tcrs_booze_quality_filter'));
+    } catch {
+      return DEFAULT_BOOZE_QUALITY_FILTER;
+    }
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem('tcrs_allowed_tags', JSON.stringify(allowedTags));
@@ -138,6 +155,12 @@ export function usePreferences() {
     } catch {}
   }, [foodQualityFilter]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('tcrs_booze_quality_filter', boozeQualityFilter);
+    } catch {}
+  }, [boozeQualityFilter]);
+
   const setThriftyMode = (mode: ThriftyMode) => {
     setThriftyModeState(mode);
     setAllowedTags((prev) => ({
@@ -171,6 +194,7 @@ export function usePreferences() {
     setAllowedTypes({ ...DEFAULT_ALLOWED_TYPES });
     setShowUnchangedItems(DEFAULT_SHOW_UNCHANGED_ITEMS);
     setFoodQualityFilter(DEFAULT_FOOD_QUALITY_FILTER);
+    setBoozeQualityFilter(DEFAULT_BOOZE_QUALITY_FILTER);
   };
 
   return {
@@ -186,6 +210,8 @@ export function usePreferences() {
     setShowUnchangedItems,
     foodQualityFilter,
     setFoodQualityFilter,
+    boozeQualityFilter,
+    setBoozeQualityFilter,
     toggleTag,
     toggleType,
     resetFilters,

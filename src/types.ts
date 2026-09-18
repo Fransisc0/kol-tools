@@ -29,6 +29,7 @@ export type ItemTagType =
 export type ThriftyMode = 'thrifty' | 'non-thrifty' | 'all';
 
 export type FoodQualityFilter = 'awesome-plus' | 'epic' | 'awesome' | 'all';
+export type BoozeQualityFilter = 'epic' | 'all';
 
 export type ItemTypeKey =
   | 'food'
@@ -74,6 +75,7 @@ export const DEFAULT_ALLOWED_TAGS = {
 
 export const DEFAULT_THRIFTY_MODE: ThriftyMode = 'thrifty';
 export const DEFAULT_FOOD_QUALITY_FILTER: FoodQualityFilter = 'awesome-plus';
+export const DEFAULT_BOOZE_QUALITY_FILTER: BoozeQualityFilter = 'epic';
 export const DEFAULT_SHOW_UNCHANGED_ITEMS = false;
 
 export interface TCRSItem {
