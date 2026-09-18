@@ -14,6 +14,8 @@ The public layout is:
 
 `render.yaml` defines a free Node web service in the Virginia region. It builds only the server, listens on Render's `PORT`, and exposes `/api/health` for health checks.
 
+For a strictly zero-cost deployment, use a Render workspace without a payment method. If free bandwidth or build limits are exhausted, Render will suspend the service or builds rather than charge the account. This project intentionally accepts that availability tradeoff.
+
 Production environment values:
 
 - `NODE_ENV=production`

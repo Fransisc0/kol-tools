@@ -1,6 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-import type { TCRSDataResponse, TCRSItem, ItemTagType } from '../src/types';
+import type { TCRSDataResponse, TCRSItem } from '../src/types';
 import { getMonsterManualEntry } from '../src/data/monsterManualData';
 import { getItemZones } from './zoneData';
 import { createBaseItem, isEquipmentUse, isPotionUse, parseEffectMetadata } from './itemNormalization';
@@ -8,444 +6,23 @@ import { createEmptyResponse } from './responseFactory';
 import { AsyncGate } from './asyncGate';
 import { clearTCRSDataSourceCache, getTCRSFileContent } from './tcrsDataSource';
 import { TimedLruCache } from './timedLruCache';
-
-interface ItemMeta {
-  name: string;
-  image: string;
-  use: string;
-}
-
-let itemMap: Map<number, ItemMeta> | null = null;
-let effectModsMap: Map<string, string> | null = null;
-
-// Store & Craft classification maps
-let npcStoreMap: Map<string, string[]> | null = null;
-let craftMap: Map<string, string[]> | null = null;
-let lastAvailableSet: Set<string> | null = null;
-let mrStoreSet: Set<string> | null = null;
-let itemMetaMap: Map<string, { id: number; access: string; price: number }> | null = null;
-let thriftyWhitelistSet: Set<string> | null = null;
-
-const hermitItemSet = new Set([
-  'ten-leaf clover',
-  'seal tooth',
-  'chisel',
-  'pet rock',
-  'jabañero pepper',
-  'wooden figurine',
-  'ketchup',
-  'catsup',
-  'chewing gum on a string',
-  'worthless trinket',
-  'worthless gewgaw',
-  'worthless knick-knack',
-]);
+import { getItemSourceEnrichment } from './itemEnrichment';
+import { clearReferenceDataCache, loadReferenceData } from './referenceData';
+import { finalizeResponse } from './responseFinalizer';
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const responseCache = new TimedLruCache<TCRSDataResponse>(6, CACHE_TTL_MS);
 const inFlightResponses = new Map<string, Promise<TCRSDataResponse>>();
 const parserGate = new AsyncGate(2);
 
-function getProjectRoot(): string {
-  return process.cwd();
-}
-
-function cleanItemName(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/&trade;/g, '™')
-    .replace(/&trade/g, '™')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&eacute;/g, 'é')
-    .replace(/&#39;/g, "'")
-    .trim();
-}
-
-export function loadReferenceData(): void {
-  if (
-    itemMap &&
-    effectModsMap &&
-    npcStoreMap &&
-    craftMap &&
-    lastAvailableSet &&
-    mrStoreSet &&
-    itemMetaMap &&
-    thriftyWhitelistSet
-  )
-    return;
-
-  const root = getProjectRoot();
-  itemMap = new Map<number, ItemMeta>();
-  effectModsMap = new Map<string, string>();
-  npcStoreMap = new Map<string, string[]>();
-  craftMap = new Map<string, string[]>();
-  lastAvailableSet = new Set<string>();
-  mrStoreSet = new Set<string>();
-  itemMetaMap = new Map<string, { id: number; access: string; price: number }>();
-  thriftyWhitelistSet = new Set<string>();
-
-  // 0. Load Thrifty Whitelist
-  const whitelistFile = path.join(root, 'server/thriftyWhitelist.json');
-  if (fs.existsSync(whitelistFile)) {
-    try {
-      const list: string[] = JSON.parse(fs.readFileSync(whitelistFile, 'utf-8'));
-      for (const s of list) {
-        thriftyWhitelistSet.add(cleanItemName(s));
-      }
-    } catch {
-      console.error(JSON.stringify({ level: 'error', event: 'thrifty_whitelist_parse_failed' }));
-    }
-  }
-
-  // 1. Load items.txt
-  const itemsFile = path.join(root, 'data/kolmafia/items.txt');
-  if (fs.existsSync(itemsFile)) {
-    const lines = fs.readFileSync(itemsFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#') || !line.trim()) continue;
-      const p = line.split('\t');
-      if (p.length >= 5) {
-        const id = parseInt(p[0], 10);
-        if (!isNaN(id)) {
-          const rawName = p[1];
-          const cName = cleanItemName(rawName);
-          const rawUse = (p[4] || '').trim().toLowerCase();
-          const use = rawUse === 'container' ? 'back' : rawUse;
-          itemMap.set(id, {
-            name: rawName,
-            image: p[3],
-            use,
-          });
-          const access = p[5] || '';
-          const price = p[6] ? parseInt(p[6], 10) || 0 : 0;
-          itemMetaMap.set(cName, { id, access, price });
-        }
-      }
-    }
-  }
-
-  // 2. Load cafe_food.txt & cafe_booze.txt
-  const cafeFoodFile = path.join(root, 'data/kolmafia/cafe_food.txt');
-  if (fs.existsSync(cafeFoodFile)) {
-    const lines = fs.readFileSync(cafeFoodFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#') || !line.trim()) continue;
-      const p = line.split('\t');
-      if (p.length >= 2) {
-        const id = parseInt(p[0], 10);
-        if (!isNaN(id)) {
-          itemMap.set(id, {
-            name: p[1],
-            image: '',
-            use: 'food',
-          });
-        }
-      }
-    }
-  }
-
-  const cafeBoozeFile = path.join(root, 'data/kolmafia/cafe_booze.txt');
-  if (fs.existsSync(cafeBoozeFile)) {
-    const lines = fs.readFileSync(cafeBoozeFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#') || !line.trim()) continue;
-      const p = line.split('\t');
-      if (p.length >= 2) {
-        const id = parseInt(p[0], 10);
-        if (!isNaN(id)) {
-          itemMap.set(id, {
-            name: p[1],
-            image: '',
-            use: 'drink',
-          });
-        }
-      }
-    }
-  }
-
-  // 3. Load modifiers.txt (for effect mods AND Last Available limited items)
-  const modsFile = path.join(root, 'data/kolmafia/modifiers.txt');
-  if (fs.existsSync(modsFile)) {
-    const lines = fs.readFileSync(modsFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('Effect\t')) {
-        const p = line.split('\t');
-        if (p.length >= 3) {
-          const raw = p[1].toLowerCase().trim();
-          effectModsMap.set(raw, p[2]);
-          const clean = raw.replace(/^\[\d+\]/, '').trim();
-          if (!effectModsMap.has(clean) || p[2].length > (effectModsMap.get(clean)?.length || 0)) {
-            effectModsMap.set(clean, p[2]);
-          }
-        }
-      } else if (line.startsWith('Item\t') && line.includes('Last Available:')) {
-        const p = line.split('\t');
-        if (p.length >= 2) {
-          lastAvailableSet.add(cleanItemName(p[1]));
-        }
-      }
-    }
-  }
-
-  // 4. Load Coinmasters for Mr. Store / IotM items and NPC stores
-  const cmFile = path.join(root, 'data/kolmafia/coinmasters.txt');
-  if (fs.existsSync(cmFile)) {
-    const lines = fs.readFileSync(cmFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#') || !line.trim()) continue;
-      const p = line.split('\t');
-      if (p.length >= 4) {
-        const master = p[0].toLowerCase();
-        const itemName = cleanItemName(p[3]);
-        if (master.includes('mr. store') || master.includes('swagger') || master.includes('bounty hunter')) {
-          mrStoreSet.add(itemName);
-        }
-
-        // User NPC Store whitelist entries from coinmasters:
-        // - The Shore, Inc. Gift Shop
-        // - The Bounty Hunter Hunter's Shack
-        // - The Swagger Shop
-        let matchedCmStore = '';
-        if (master.includes('shore, inc. gift shop')) {
-          matchedCmStore = 'The Shore, Inc. Gift Shop';
-        } else if (master.includes('bounty hunter hunter') && !master.includes('hms')) {
-          matchedCmStore = "The Bounty Hunter Hunter's Shack";
-        } else if (master.includes('swagger shop')) {
-          matchedCmStore = 'The Swagger Shop';
-        }
-
-        if (matchedCmStore) {
-          const existing = npcStoreMap.get(itemName) || [];
-          if (!existing.includes(matchedCmStore)) {
-            existing.push(matchedCmStore);
-          }
-          npcStoreMap.set(itemName, existing);
-        }
-      }
-    }
-  }
-
-  // 5. Load NPC Stores from npcstores.txt according to user whitelist
-  const npcFile = path.join(root, 'data/kolmafia/npcstores.txt');
-  if (fs.existsSync(npcFile)) {
-    const lines = fs.readFileSync(npcFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#') || !line.trim()) continue;
-      const p = line.split('\t');
-      if (p.length >= 3) {
-        const store = p[0].trim();
-        const itemName = cleanItemName(p[2]);
-        const sl = store.toLowerCase();
-
-        // Do not include temporary event/holiday stores like Black and White and Red All Over Market or Crimbo
-        if (
-          sl.includes('black and white and red') ||
-          sl.includes('crimbo') ||
-          (p[1] && p[1].toLowerCase().includes('crimbo')) ||
-          sl.includes('cyber_hackmarket') ||
-          sl.includes('ornament stand')
-        ) {
-          continue;
-        }
-
-        const addStore = (storeName: string) => {
-          const existing = npcStoreMap!.get(itemName) || [];
-          if (!existing.includes(storeName)) {
-            existing.push(storeName);
-          }
-          npcStoreMap!.set(itemName, existing);
-        };
-
-        let finalStoreName = store;
-
-        // Clean up some extraneous text
-        finalStoreName = finalStoreName
-          .replace(' (Pre-War)', '')
-          .replace(' (Hippy)', '')
-          .replace(' (Fratboy)', '')
-          .replace(' (Bees Hate You)', '');
-
-        if (finalStoreName === 'The Typical Tavern') {
-          addStore('Bart Ender');
-        } else if (finalStoreName.includes('Hippy Store')) {
-          addStore('The Hippy Store');
-          addStore('The Organic Produce Stand');
-        } else {
-          addStore(finalStoreName);
-        }
-      }
-    }
-  }
-
-  // Hermit, Bart Ender, Suspicious Guy, Chez Snootée additions
-  const addSpecialVendor = (item: string, storeName: string) => {
-    const c = cleanItemName(item);
-    const existing = npcStoreMap!.get(c) || [];
-    if (!existing.includes(storeName)) {
-      existing.push(storeName);
-    }
-    npcStoreMap!.set(c, existing);
-  };
-
-  [
-    'ten-leaf clover',
-    'seal tooth',
-    'chisel',
-    'pet rock',
-    'jabañero pepper',
-    'wooden figurine',
-    'ketchup',
-    'catsup',
-    'chewing gum on a string',
-    'worthless trinket',
-    'worthless gewgaw',
-    'worthless knick-knack',
-  ].forEach((i) => addSpecialVendor(i, 'The Hermit'));
-
-  ['bottle of goofballs', 'goofballs'].forEach((i) => addSpecialVendor(i, 'A Suspicious-Looking Guy'));
-
-  ['peche a la frog', 'as jus gezund heit', 'bouillabaise coucher avec moi'].forEach((i) =>
-    addSpecialVendor(i, 'Chez Snootée'),
-  );
-
-  // 6. Load Concoctions from concoctions.txt
-  // Exact method parsing based on official KoLmafia concoction definitions:
-  // - Advanced Cocktailcrafting: ACOCK or 'MIX, AC' (NOT SACOCK which is Salacious Cocktailcrafting)
-  // - Pastamastery: PASTA or PASTAMASTERY (NOT TNOODLE)
-  // - Advanced Saucecrafting: SAUCE or 'SAUCE, SX3' (NOT DSAUCE, SSAUCE)
-  // - Basic Meatsmithing: SMITH or starts with 'SMITH,' (NOT ASMITH or WSMITH)
-  const concFile = path.join(root, 'data/kolmafia/concoctions.txt');
-  if (fs.existsSync(concFile)) {
-    const lines = fs.readFileSync(concFile, 'utf-8').split('\n');
-    for (const line of lines) {
-      if (line.startsWith('#') || !line.trim()) continue;
-      const p = line.split('\t').map((x) => x.trim());
-      if (p.length >= 3) {
-        const itemName = cleanItemName(p[0]);
-        const methodUpper = p[1].toUpperCase();
-        const ingrs = p.slice(2).map((x) => x.toLowerCase());
-
-        const matchedCrafts: string[] = [];
-
-        // 1. Advanced Cocktailcrafting
-        if (methodUpper === 'ACOCK' || methodUpper === 'MIX, AC') {
-          matchedCrafts.push('Advanced Cocktailcrafting');
-        }
-
-        // 2. Pastamastery
-        if (methodUpper === 'PASTA' || methodUpper === 'PASTAMASTERY') {
-          matchedCrafts.push('Pastamastery');
-        }
-
-        // 3. Advanced Saucecrafting
-        if (methodUpper === 'SAUCE' || methodUpper === 'SAUCE, SX3') {
-          matchedCrafts.push('Advanced Saucecrafting');
-        }
-
-        // 4. Basic Meatsmithing
-        if (methodUpper === 'SMITH' || methodUpper.startsWith('SMITH,')) {
-          if (
-            ingrs.some(
-              (i) =>
-                i.includes('dry noodles') ||
-                i.includes('ketchup') ||
-                i.includes('catsup') ||
-                i.includes('scrumptious reagent'),
-            )
-          ) {
-            matchedCrafts.push('Basic Meatsmithing, Tier 2');
-          } else {
-            matchedCrafts.push('Basic Meatsmithing, Tier 1');
-          }
-        }
-
-        if (matchedCrafts.length > 0) {
-          const existing = craftMap.get(itemName) || [];
-          for (const mc of matchedCrafts) {
-            if (!existing.includes(mc)) existing.push(mc);
-          }
-          craftMap.set(itemName, existing);
-        }
-      }
-    }
-  }
-}
-
-// Determines if an item belongs on the Thrifty whitelist or is Non-Thrifty
-function isThriftyAccessible(
-  origName: string,
-  _id: number,
-  _itemModifiers: string,
-): { isThrifty: boolean; reason: string } {
-  const clean = cleanItemName(origName);
-
-  if (thriftyWhitelistSet && thriftyWhitelistSet.has(clean)) {
-    return { isThrifty: true, reason: 'Thrifty Whitelist' };
-  }
-
-  return { isThrifty: false, reason: 'Non-Thrifty (Not in Whitelist)' };
-}
-
-// Determines tags and source details for an item
-function getItemTags(
-  origName: string,
-  id: number,
-  itemModifiers: string = '',
-): { tags: ItemTagType[]; sourceDetails: string[] } {
-  const clean = cleanItemName(origName);
-  const tags: ItemTagType[] = [];
-  const sourceDetails: string[] = [];
-
-  const { isThrifty, reason } = isThriftyAccessible(origName, id, itemModifiers);
-
-  if (isThrifty) {
-    tags.push('Thrifty Accessible');
-  } else {
-    tags.push('Non-Thrifty');
-    sourceDetails.push(reason);
-  }
-
-  // Check NPC Stores
-  const stores = npcStoreMap?.get(clean) || [];
-  if (stores.length > 0) {
-    if (!tags.includes('NPC Store')) tags.push('NPC Store');
-    for (const st of stores) {
-      if (!sourceDetails.includes(st)) sourceDetails.push(st);
-    }
-  }
-  if (hermitItemSet.has(clean)) {
-    if (!tags.includes('NPC Store')) tags.push('NPC Store');
-    if (!sourceDetails.includes('The Hermit')) sourceDetails.push('The Hermit');
-  }
-
-  // Check Craftable Recipes
-  const crafts = craftMap?.get(clean) || [];
-  if (crafts.length > 0) {
-    if (!tags.includes('Craftable')) tags.push('Craftable');
-    if (!tags.includes('Easily Craftable Recipe')) tags.push('Easily Craftable Recipe');
-    for (const cr of crafts) {
-      if (!sourceDetails.includes(cr)) sourceDetails.push(cr);
-    }
-  }
-
-  if (sourceDetails.length === 0) {
-    sourceDetails.push(isThrifty ? 'In-run Drop / Evergreen Standard' : 'Non-Thrifty');
-  }
-
-  return { tags, sourceDetails };
-}
+export { loadReferenceData } from './referenceData';
 
 // Helper to automatically sort items from most to least of their effect
-function sortByMostToLeast(items: TCRSItem[]): TCRSItem[] {
-  return items.sort((a, b) => b.extractedNumericBonus - a.extractedNumericBonus);
-}
-
 async function parseTCRSFileUncached(className: string, moonSign: string): Promise<TCRSDataResponse> {
   const normClass = className.replace(/\s+/g, '_');
   const normSign = moonSign.replace(/\s+/g, '_');
 
-  loadReferenceData();
+  const referenceData = loadReferenceData();
 
   const response = createEmptyResponse(normClass, normSign);
 
@@ -485,7 +62,7 @@ async function parseTCRSFileUncached(className: string, moonSign: string): Promi
       const quality = parts[3];
       const itemModifiers = parts[4] || '';
 
-      const origMeta = itemMap?.get(id) || {
+      const origMeta = referenceData.items.get(id) || {
         name: tcrsName,
         image: '',
         use: forcedType || 'none',
@@ -493,14 +70,14 @@ async function parseTCRSFileUncached(className: string, moonSign: string): Promi
 
       const primaryUse = (forcedType || origMeta.use.split(',')[0].trim()).toLowerCase();
 
-      const effect = parseEffectMetadata(itemModifiers, effectModsMap || new Map());
+      const effect = parseEffectMetadata(itemModifiers, referenceData.effectModifiers);
       const { effectName, effectDuration, effectModifiers } = effect;
       const isPotion = isPotionUse(primaryUse, origMeta.use, Boolean(effectName));
       const isEquipment = isEquipmentUse(primaryUse);
 
       const itemZones = getItemZones(origMeta.name);
 
-      const { tags, sourceDetails } = getItemTags(origMeta.name, id, itemModifiers);
+      const { tags, sourceDetails } = getItemSourceEnrichment(origMeta.name, referenceData);
 
       let isSeaItem = false;
       for (const z of itemZones) {
@@ -1096,84 +673,7 @@ async function parseTCRSFileUncached(className: string, moonSign: string): Promi
     }
   }
 
-  // AUTOMATICALLY ORGANIZE THE BUFFS IN ORDER OF MOST TO LEAST OF THEIR EFFECT:
-  sortByMostToLeast(response.turnGeneration.food);
-  sortByMostToLeast(response.turnGeneration.booze);
-  sortByMostToLeast(response.turnGeneration.rolloverAdventures);
-  sortByMostToLeast(response.turnGeneration.odeToBooze);
-  sortByMostToLeast(response.turnGeneration.garish);
-
-  sortByMostToLeast(response.generalQuestBuffs.noncombat);
-  sortByMostToLeast(response.generalQuestBuffs.combat);
-  sortByMostToLeast(response.generalQuestBuffs.monsterLevel);
-  sortByMostToLeast(response.generalQuestBuffs.normalItemDrop);
-  sortByMostToLeast(response.generalQuestBuffs.foodDrop);
-  sortByMostToLeast(response.generalQuestBuffs.boozeDrop);
-  sortByMostToLeast(response.generalQuestBuffs.meatDrop);
-  sortByMostToLeast(response.generalQuestBuffs.statGainsBasic);
-  sortByMostToLeast(response.generalQuestBuffs.statGainsMus);
-  sortByMostToLeast(response.generalQuestBuffs.statGainsMys);
-  sortByMostToLeast(response.generalQuestBuffs.statGainsMox);
-  sortByMostToLeast(response.generalQuestBuffs.familiarWeight);
-  sortByMostToLeast(response.generalQuestBuffs.familiarExp);
-  sortByMostToLeast(response.generalQuestBuffs.initiative);
-
-  sortByMostToLeast(response.questSpecificBuffs.minusMonsterLevel);
-  sortByMostToLeast(response.questSpecificBuffs.frostyEffect);
-  sortByMostToLeast(response.questSpecificBuffs.flatWeaponDamage);
-  sortByMostToLeast(response.questSpecificBuffs.weaponDamagePercent);
-  sortByMostToLeast(response.questSpecificBuffs.flatSpellDamage);
-  sortByMostToLeast(response.questSpecificBuffs.spellDamagePercent);
-  sortByMostToLeast(response.questSpecificBuffs.resCold);
-  sortByMostToLeast(response.questSpecificBuffs.resHot);
-  sortByMostToLeast(response.questSpecificBuffs.resStench);
-  sortByMostToLeast(response.questSpecificBuffs.resSpooky);
-  sortByMostToLeast(response.questSpecificBuffs.resSleaze);
-  sortByMostToLeast(response.questSpecificBuffs.dmgCold);
-  sortByMostToLeast(response.questSpecificBuffs.dmgHot);
-  sortByMostToLeast(response.questSpecificBuffs.dmgStench);
-  sortByMostToLeast(response.questSpecificBuffs.dmgSpooky);
-  sortByMostToLeast(response.questSpecificBuffs.dmgSleaze);
-
-  sortByMostToLeast(response.survivalBuffs.superSkill);
-  sortByMostToLeast(response.survivalBuffs.odeToBooze);
-  sortByMostToLeast(response.survivalBuffs.frosty);
-  sortByMostToLeast(response.survivalBuffs.inigos);
-  sortByMostToLeast(response.survivalBuffs.flatMuscle);
-  sortByMostToLeast(response.survivalBuffs.musclePercent);
-  sortByMostToLeast(response.survivalBuffs.flatMysticality);
-  sortByMostToLeast(response.survivalBuffs.mysticalityPercent);
-  sortByMostToLeast(response.survivalBuffs.flatMoxie);
-  sortByMostToLeast(response.survivalBuffs.moxiePercent);
-  sortByMostToLeast(response.survivalBuffs.damageAbsorption);
-  sortByMostToLeast(response.survivalBuffs.mpRegen);
-
-  // Summary counts
-  response.summary = {
-    food: response.turnGeneration.food.length,
-    booze: response.turnGeneration.booze.length,
-    rolloverAdventures: response.turnGeneration.rolloverAdventures.length,
-    noncombat: response.generalQuestBuffs.noncombat.length,
-    combat: response.generalQuestBuffs.combat.length,
-    monsterLevel: response.generalQuestBuffs.monsterLevel.length,
-    normalItemDrop: response.generalQuestBuffs.normalItemDrop.length,
-    meatDrop: response.generalQuestBuffs.meatDrop.length,
-    initiative: response.generalQuestBuffs.initiative.length,
-    minusMonsterLevel: response.questSpecificBuffs.minusMonsterLevel.length,
-    frostyEffect: response.questSpecificBuffs.frostyEffect.length,
-    flatWeaponDamage: response.questSpecificBuffs.flatWeaponDamage.length,
-    weaponDamagePercent: response.questSpecificBuffs.weaponDamagePercent.length,
-    flatSpellDamage: response.questSpecificBuffs.flatSpellDamage.length,
-    spellDamagePercent: response.questSpecificBuffs.spellDamagePercent.length,
-    superSkill: response.survivalBuffs.superSkill.length,
-    odeToBooze: response.survivalBuffs.odeToBooze.length,
-    frosty: response.survivalBuffs.frosty.length,
-    inigos: response.survivalBuffs.inigos.length,
-    damageAbsorption: response.survivalBuffs.damageAbsorption.length,
-    mpRegen: response.survivalBuffs.mpRegen.length,
-  };
-
-  return response;
+  return finalizeResponse(response);
 }
 
 export async function parseTCRSFile(className: string, moonSign: string): Promise<TCRSDataResponse> {
@@ -1200,6 +700,7 @@ export async function parseTCRSFile(className: string, moonSign: string): Promis
 
 export function clearTCRSCaches(): void {
   responseCache.clear();
+  clearReferenceDataCache();
   clearTCRSDataSourceCache();
   inFlightResponses.clear();
 }

@@ -16,7 +16,7 @@ The API has no authentication, write endpoints, database, or user content. Only 
 
 Checked-in reference files provide a deterministic fallback. The parser can refresh a requested TCRS file from the official KoLmafia repository with a short timeout. Failed upstream requests fall back to the bundled snapshot.
 
-Parser responsibilities are separated across normalization, response creation, source retrieval, zone enrichment, cache, and concurrency modules. The remaining parser orchestrator preserves the established response schema and categorization rules.
+Parser responsibilities are separated across reference-data loading, item/source enrichment, normalization, response finalization, source retrieval, zone enrichment, caching, and concurrency modules. The parser orchestrator retains the ordered categorization rules so their precedence remains visible while preserving the established response schema.
 
 ## Client organization
 
