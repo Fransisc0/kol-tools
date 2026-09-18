@@ -14,5 +14,6 @@ Do not commit environment files, logs, generated build output, personal informat
 
 - Prefer typed, pure helpers for data semantics and filtering.
 - Keep React components focused on rendering and interaction.
-- Preserve the public API response shape and existing local-storage keys unless a migration is explicitly documented.
+- Preserve the `TCRSDataResponse` shape and existing local-storage keys unless a migration is explicitly documented.
 - Maintain keyboard operation, visible focus states, sufficient contrast, and responsive behavior.
+- Keep browser runtime requests same-origin; data updates belong at the deterministic build boundary.

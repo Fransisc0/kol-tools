@@ -15,8 +15,8 @@ if (!appHtml.includes('/kol-tools/tcrs/assets/')) {
 if (!appHtml.includes('http-equiv="Content-Security-Policy"')) {
   throw new Error('The TCRS client is missing its Content Security Policy.');
 }
-if (!appHtml.includes('https://fransisc0-kol-tools-tcrs-api.onrender.com')) {
-  throw new Error('The TCRS client CSP does not permit the production API origin.');
+if (!appHtml.includes("connect-src 'self'")) {
+  throw new Error('The TCRS client CSP must restrict data requests to the Pages origin.');
 }
 
 for (const page of ['index.html', 'privacy.html']) {
@@ -27,9 +27,17 @@ for (const page of ['index.html', 'privacy.html']) {
 }
 
 const rootFiles = await readdir(pagesDirectory, { recursive: true });
-const forbidden = rootFiles.filter((entry) => /server\.(?:cjs|js|map)$/i.test(entry));
+const forbidden = rootFiles.filter((entry) => /(?:server\.(?:cjs|js|map)|\.env|\.map$|\.log$)/i.test(entry));
 if (forbidden.length) {
   throw new Error(`Server artifacts are present in the Pages directory: ${forbidden.join(', ')}`);
 }
+
+const dataManifest = JSON.parse(
+  await readFile(path.join(pagesDirectory, 'tcrs', 'data', 'manifest.json'), 'utf8'),
+);
+if (!Array.isArray(dataManifest.files) || dataManifest.files.length !== 162) {
+  throw new Error(`Expected 162 allowlisted TCRS files, found ${dataManifest.files.length}.`);
+}
+await access(path.join(pagesDirectory, 'tcrs', 'data', 'reference-data.json'));
 
 console.log('GitHub Pages artifact structure is valid.');

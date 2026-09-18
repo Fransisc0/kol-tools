@@ -79,7 +79,7 @@ async function walk(directory, relativeDirectory = '') {
     if (entry.name.endsWith('.map') && normalized.startsWith('dist\\pages\\')) {
       failures.push(`${relativePath}: source map must not be published`);
     }
-    if (entry.name.startsWith('.env') && entry.name !== '.env.example') {
+    if (entry.name.startsWith('.env')) {
       failures.push(`${relativePath}: environment file must not be published`);
     }
     if (!textExtensions.has(path.extname(entry.name).toLowerCase())) continue;

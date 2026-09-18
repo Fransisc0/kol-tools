@@ -1,30 +1,27 @@
 # Architecture
 
-## Browser application
+## Runtime
 
-React and Vite build the TCRS viewer for the `/kol-tools/tcrs/` GitHub Pages path. The browser stores only layout and filter preferences in local storage. It requests one class/sign dataset at a time from the read-only API.
+The application is a static React/Vite site under `/kol-tools/tcrs/`. GitHub Pages serves HTML, JavaScript, styles, a deterministic reference index, and an explicit allowlist of TCRS text files. There is no application server.
 
-## API
+For each selection, the browser loads the shared reference index once and the selected base, café-food, and café-booze files. A dedicated Web Worker parses those files so the React main thread stays responsive. Identical requests share one in-flight operation; completed results use a two-entry least-recently-used cache. Request IDs let the React client ignore stale responses after rapid selection changes.
 
-Express validates fixed class and moon-sign identifiers, parses checked-in KoLmafia data, and returns the existing `TCRSDataResponse` contract. Responses use compression, ETags, browser caching, request rate limiting, and a bounded six-entry LRU cache. Concurrent requests for the same combination share one parser operation.
+## Source boundaries
 
-Resource controls operate at two layers: at most eight dataset responses may be active at once, and at most two uncached parser jobs may run concurrently. Upstream files have a four-second timeout and a 2 MiB streaming limit.
+- `src/app` composes application-level behavior and error boundaries.
+- `src/components` contains focused presentation and interaction controls.
+- `src/features/tcrs/data` validates selections and loads same-origin static assets.
+- `src/features/tcrs/domain` normalizes, enriches, categorizes, and finalizes parsed records.
+- `src/features/tcrs/worker` owns the typed worker protocol and bounded runtime cache.
+- `src/shared` and existing typed utilities hold storage and cross-feature primitives.
+- `scripts/data` converts checked-in KoLmafia sources into the public reference index.
 
-The API has no authentication, write endpoints, database, or user content. Only the GitHub Pages origin is allowed by CORS in production.
+The build-time generator is the only code allowed to inspect the complete source-data tree. Its output is deterministic and generated rather than committed.
 
-## Data
+## Public artifact
 
-Checked-in reference files provide a deterministic fallback. The parser can refresh a requested TCRS file from the official KoLmafia repository with a short timeout. Failed upstream requests fall back to the bundled snapshot.
+`dist/pages` is the deployable GitHub Pages artifact. It contains the hub, privacy page, viewer, static assets, reference index, and exactly 162 allowlisted TCRS files. Source maps, environment files, logs, local paths, backend code, and server bundles are forbidden by artifact verification.
 
-Parser responsibilities are separated across reference-data loading, item/source enrichment, normalization, response finalization, source retrieval, zone enrichment, caching, and concurrency modules. The parser orchestrator retains the ordered categorization rules so their precedence remains visible while preserving the established response schema.
+## Compatibility
 
-## Client organization
-
-Shared semantics and filtering remain pure and independently tested. Item-list state, desktop filter controls, quality controls, preference persistence, and item-type presentation configuration are separate from the rendering orchestrators. Browser and server code use separate strict TypeScript and ESLint environments.
-
-## Build artifacts
-
-- `dist/pages` contains only public GitHub Pages content.
-- `dist/server/server.cjs` contains the Render API bundle.
-
-The server bundle and source maps are never placed in the Pages directory.
+Parser output remains equivalent to the pre-static release. `scripts/fixtures/tcrs-golden-hashes.json` records a SHA-256 hash of each of the 54 serialized responses. `npm run verify:data` rebuilds each response from public static inputs and compares it with those hashes.

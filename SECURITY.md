@@ -6,12 +6,10 @@ Only the latest deployment from the `main` branch is supported.
 
 ## Reporting a vulnerability
 
-Please use GitHub's private vulnerability reporting feature for this repository. Do not disclose a suspected vulnerability in a public issue before it has been reviewed.
-
-Include the affected URL or component, reproduction steps, likely impact, and any suggested mitigation. Reports should not include real credentials or personal information.
+Use GitHub's private vulnerability reporting feature for this repository. Do not publish a suspected vulnerability before it has been reviewed. Include the affected component, reproduction steps, likely impact, and suggested mitigation; do not include real credentials or personal information.
 
 ## Security model
 
-The application is anonymous and read-only. It has no accounts, write endpoints, database, payment flow, or application-managed secrets. Browser preferences remain in local storage.
+KoL Tools is a same-origin static application with no backend, accounts, write endpoints, database, payment flow, telemetry, runtime secrets, or user-submitted content. Browser preferences remain in local storage. Class and sign identifiers are checked against fixed allowlists before any asset URL is formed, and worker errors are sanitized.
 
-The API validates fixed identifiers, restricts browser origins and methods, limits request rates and concurrency, bounds upstream downloads, and falls back to checked-in data. Deployment workflows use least-privilege permissions, immutable action revisions, dependency auditing, CodeQL, and history-aware secret scanning.
+HTML entry points use restrictive content-security and referrer policies. Release checks enforce immutable GitHub Action revisions, dependency auditing, CodeQL, secret scanning, exact data inventories, no source maps, and history-aware privacy scanning.

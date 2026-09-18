@@ -1,36 +1,31 @@
 # Deployment
 
-## GitHub Pages
+GitHub Pages is the only runtime host. The project has no Render service, API, database, payment method, or runtime secrets.
 
-The Pages workflow validates the repository, builds with `VITE_API_BASE_URL`, verifies the public artifact, and uploads `dist/pages`. GitHub Pages must use **GitHub Actions** as its source.
+## Build and publish
 
-The public layout is:
+The Pages workflow runs `npm ci` and `npm run verify`, configures Pages, uploads `dist/pages`, and deploys it. Repository Pages settings must use **GitHub Actions** as the source.
+
+Public layout:
 
 - `/kol-tools/` — tools hub
 - `/kol-tools/privacy.html` — privacy statement
 - `/kol-tools/tcrs/` — TCRS viewer
 
-## Render API
+To inspect the exact artifact locally:
 
-`render.yaml` defines a free Node web service in the Virginia region. It builds only the server, listens on Render's `PORT`, and exposes `/api/health` for health checks.
-
-For a strictly zero-cost deployment, use a Render workspace without a payment method. If free bandwidth or build limits are exhausted, Render will suspend the service or builds rather than charge the account. This project intentionally accepts that availability tradeoff.
-
-Production environment values:
-
-- `NODE_ENV=production`
-- `ALLOWED_ORIGIN=https://fransisc0.github.io`
-- `SERVE_CLIENT=false`
-
-The free service can sleep after inactivity. The client explains this when an initial request takes longer than eight seconds.
-
-GitHub Pages does not support project-defined HTTP response headers. The static pages therefore use a restrictive HTML CSP and referrer policy. The viewer permits inline styles because Vite injects development styles, while scripts remain restricted to same-origin modules. Header-only controls such as `frame-ancestors` would require a different static host or a proxy under a custom domain.
+```sh
+npm run build
+npm run preview
+```
 
 ## Release procedure
 
-1. Run `npm run verify` locally.
-2. Merge through a passing pull request.
-3. Confirm the Render deployment and public health endpoint.
-4. Confirm the Pages deployment at the hub and viewer URLs.
-5. Perform responsive and browser-console acceptance checks.
+1. Run `npm run verify` from a clean checkout.
+2. Review dependency, privacy, artifact, and 54-dataset equivalence results.
+3. Merge only after CI, CodeQL, and secret scanning pass.
+4. Confirm the Pages deployment and both public URLs.
+5. Check responsive layouts, keyboard interaction, dataset switching, and the browser console.
 6. Tag the verified commit using semantic versioning.
+
+GitHub Pages cannot add project-defined HTTP response headers. Every HTML entry point therefore includes a restrictive CSP and no-referrer policy. Controls that require response headers, such as `frame-ancestors`, would require a different host.

@@ -27,16 +27,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['server/**/*.ts', 'server.ts'],
-    languageOptions: { globals: globals.node },
-    rules: {
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      'no-console': 'off',
-      'no-empty': ['error', { allowEmptyCatch: true }],
-    },
-  },
-  {
-    files: ['*.config.{js,ts}', 'scripts/**/*.mjs'],
+    files: ['*.config.{js,ts}', 'scripts/**/*.{mjs,ts}'],
     languageOptions: { globals: globals.node },
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
