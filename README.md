@@ -11,6 +11,7 @@ An open-source, privacy-conscious collection of utilities built from public KoLm
 - Browse turn generation, unified buffs, NPC stores, zones, or all items.
 - Search, sort, filter, paginate, and switch between compact rows and cards.
 - Load only the selected dataset and parse it off the main thread.
+- Refresh production data daily from the official KoLmafia repository after validating all 54 combinations.
 - No backend, accounts, analytics, ads, tracking, cookies, or paid infrastructure.
 
 ## Development
@@ -29,11 +30,12 @@ Useful commands:
 ```sh
 npm test             # unit and component tests
 npm run verify:data  # compare all 54 parser outputs with release hashes
+npm run verify:upstream -- --source <normalized-data-directory>
 npm run build        # create the exact Pages artifact in dist/pages
 npm run verify       # complete release-quality validation
 ```
 
-See [data updates](docs/DATA_UPDATES.md) before changing the checked-in KoLmafia snapshot or golden hashes.
+Production data updates automatically through the fail-safe Pages workflow. See [data updates](docs/DATA_UPDATES.md) before changing the checked-in fallback snapshot or golden hashes.
 
 ## Architecture and policies
 

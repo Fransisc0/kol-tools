@@ -16,8 +16,6 @@ export interface BuildReferenceData {
   thriftyWhitelist: Set<string>;
 }
 
-let cachedReferenceData: BuildReferenceData | undefined;
-
 export function normalizeLookupName(value: string): string {
   return decodeLookupEntities(value.toLowerCase()).trim();
 }
@@ -28,8 +26,8 @@ function addValue(map: Map<string, string[]>, key: string, value: string): void 
   map.set(key, existing);
 }
 
-function loadItems(root: string, items: Map<number, ItemMetadata>): void {
-  const filename = path.join(root, 'data/kolmafia/items.txt');
+function loadItems(dataRoot: string, items: Map<number, ItemMetadata>): void {
+  const filename = path.join(dataRoot, 'items.txt');
   if (!fs.existsSync(filename)) return;
 
   for (const line of fs.readFileSync(filename, 'utf8').split('\n')) {
@@ -47,12 +45,12 @@ function loadItems(root: string, items: Map<number, ItemMetadata>): void {
   }
 }
 
-function loadCafeItems(root: string, items: Map<number, ItemMetadata>): void {
+function loadCafeItems(dataRoot: string, items: Map<number, ItemMetadata>): void {
   for (const [relativePath, use] of [
-    ['data/kolmafia/cafe_food.txt', 'food'],
-    ['data/kolmafia/cafe_booze.txt', 'drink'],
+    ['cafe_food.txt', 'food'],
+    ['cafe_booze.txt', 'drink'],
   ] as const) {
-    const filename = path.join(root, relativePath);
+    const filename = path.join(dataRoot, relativePath);
     if (!fs.existsSync(filename)) continue;
     for (const line of fs.readFileSync(filename, 'utf8').split('\n')) {
       if (line.startsWith('#') || !line.trim()) continue;
@@ -64,8 +62,8 @@ function loadCafeItems(root: string, items: Map<number, ItemMetadata>): void {
   }
 }
 
-function loadEffectModifiers(root: string, effectModifiers: Map<string, string>): void {
-  const filename = path.join(root, 'data/kolmafia/modifiers.txt');
+function loadEffectModifiers(dataRoot: string, effectModifiers: Map<string, string>): void {
+  const filename = path.join(dataRoot, 'modifiers.txt');
   if (!fs.existsSync(filename)) return;
 
   for (const line of fs.readFileSync(filename, 'utf8').split('\n')) {
@@ -81,8 +79,8 @@ function loadEffectModifiers(root: string, effectModifiers: Map<string, string>)
   }
 }
 
-function loadCoinmasterStores(root: string, npcStores: Map<string, string[]>): void {
-  const filename = path.join(root, 'data/kolmafia/coinmasters.txt');
+function loadCoinmasterStores(dataRoot: string, npcStores: Map<string, string[]>): void {
+  const filename = path.join(dataRoot, 'coinmasters.txt');
   if (!fs.existsSync(filename)) return;
 
   for (const line of fs.readFileSync(filename, 'utf8').split('\n')) {
@@ -100,8 +98,8 @@ function loadCoinmasterStores(root: string, npcStores: Map<string, string[]>): v
   }
 }
 
-function loadNpcStores(root: string, npcStores: Map<string, string[]>): void {
-  const filename = path.join(root, 'data/kolmafia/npcstores.txt');
+function loadNpcStores(dataRoot: string, npcStores: Map<string, string[]>): void {
+  const filename = path.join(dataRoot, 'npcstores.txt');
   if (!fs.existsSync(filename)) return;
 
   for (const line of fs.readFileSync(filename, 'utf8').split('\n')) {
@@ -160,8 +158,8 @@ function loadNpcStores(root: string, npcStores: Map<string, string[]>): void {
   );
 }
 
-function loadCraftMethods(root: string, craftMethods: Map<string, string[]>): void {
-  const filename = path.join(root, 'data/kolmafia/concoctions.txt');
+function loadCraftMethods(dataRoot: string, craftMethods: Map<string, string[]>): void {
+  const filename = path.join(dataRoot, 'concoctions.txt');
   if (!fs.existsSync(filename)) return;
 
   for (const line of fs.readFileSync(filename, 'utf8').split('\n')) {
@@ -189,8 +187,8 @@ function loadCraftMethods(root: string, craftMethods: Map<string, string[]>): vo
   }
 }
 
-function loadThriftyWhitelist(root: string, thriftyWhitelist: Set<string>): void {
-  const filename = path.join(root, 'data/thrifty-whitelist.json');
+function loadThriftyWhitelist(projectRoot: string, thriftyWhitelist: Set<string>): void {
+  const filename = path.join(projectRoot, 'data/thrifty-whitelist.json');
   if (!fs.existsSync(filename)) return;
   try {
     const values = JSON.parse(fs.readFileSync(filename, 'utf8')) as string[];
@@ -200,9 +198,10 @@ function loadThriftyWhitelist(root: string, thriftyWhitelist: Set<string>): void
   }
 }
 
-export function loadReferenceData(root = process.cwd()): BuildReferenceData {
-  if (cachedReferenceData) return cachedReferenceData;
-
+export function loadReferenceData(
+  dataRoot = path.join(process.cwd(), 'data', 'kolmafia'),
+  projectRoot = process.cwd(),
+): BuildReferenceData {
   const data: BuildReferenceData = {
     items: new Map(),
     effectModifiers: new Map(),
@@ -210,17 +209,12 @@ export function loadReferenceData(root = process.cwd()): BuildReferenceData {
     craftMethods: new Map(),
     thriftyWhitelist: new Set(),
   };
-  loadThriftyWhitelist(root, data.thriftyWhitelist);
-  loadItems(root, data.items);
-  loadCafeItems(root, data.items);
-  loadEffectModifiers(root, data.effectModifiers);
-  loadCoinmasterStores(root, data.npcStores);
-  loadNpcStores(root, data.npcStores);
-  loadCraftMethods(root, data.craftMethods);
-  cachedReferenceData = data;
+  loadThriftyWhitelist(projectRoot, data.thriftyWhitelist);
+  loadItems(dataRoot, data.items);
+  loadCafeItems(dataRoot, data.items);
+  loadEffectModifiers(dataRoot, data.effectModifiers);
+  loadCoinmasterStores(dataRoot, data.npcStores);
+  loadNpcStores(dataRoot, data.npcStores);
+  loadCraftMethods(dataRoot, data.craftMethods);
   return data;
-}
-
-export function clearReferenceDataCache(): void {
-  cachedReferenceData = undefined;
 }

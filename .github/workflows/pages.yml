@@ -3,12 +3,11 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '17 6 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -16,24 +15,85 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      should_deploy: ${{ steps.deployment-check.outputs.should_deploy }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out kol-tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Check out approved KoLmafia data
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: kolmafia/kolmafia
+          ref: main
+          path: .upstream/kolmafia
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /data/TCRS
+            /src/data/items.txt
+            /src/data/modifiers.txt
+            /src/data/npcstores.txt
+            /src/data/coinmasters.txt
+            /src/data/concoctions.txt
+            /src/data/combats.txt
+            /src/data/monsters.txt
+            /src/data/cafe_food.txt
+            /src/data/cafe_booze.txt
+      - name: Record KoLmafia source revision
+        id: source
+        shell: bash
+        run: |
+          echo "revision=$(git -C .upstream/kolmafia rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "committed_at=$(git -C .upstream/kolmafia show -s --format=%cI HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22.13.0
           cache: npm
-      - run: npm ci
-      - run: npm run verify
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify application against the committed snapshot
+        run: npm run verify
+      - name: Stage the approved KoLmafia files
+        run: >-
+          npm run data:sync --
+          --source .upstream/kolmafia
+          --destination .staged-data/kolmafia
+          --revision "${{ steps.source.outputs.revision }}"
+          --committed-at "${{ steps.source.outputs.committed_at }}"
+      - name: Validate all upstream datasets
+        run: npm run verify:upstream -- --source .staged-data/kolmafia
+      - name: Check whether deployment data changed
+        id: deployment-check
+        run: npm run deployment:check
+      - name: Build staged Pages artifact
+        if: steps.deployment-check.outputs.should_deploy == 'true'
+        run: npm run build:staged
+      - name: Verify staged Pages artifact
+        if: steps.deployment-check.outputs.should_deploy == 'true'
+        run: npm run verify:pages && npm run verify:privacy
+      - name: Configure GitHub Pages
+        if: steps.deployment-check.outputs.should_deploy == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - name: Upload GitHub Pages artifact
+        if: steps.deployment-check.outputs.should_deploy == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist/pages
+          retention-days: 1
 
   deploy:
+    if: needs.build.outputs.should_deploy == 'true'
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

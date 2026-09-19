@@ -24,7 +24,16 @@ export default defineConfig(({ mode }) => {
       watch:
         process.env.DISABLE_HMR === 'true'
           ? null
-          : { ignored: ['**/data/**', '**/public/data/**', '**/dist/**', '**/scripts/legacy/**'] },
+          : {
+              ignored: [
+                '**/.upstream/**',
+                '**/.staged-data/**',
+                '**/data/**',
+                '**/public/data/**',
+                '**/dist/**',
+                '**/scripts/legacy/**',
+              ],
+            },
     },
   };
 });

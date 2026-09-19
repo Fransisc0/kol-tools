@@ -5,6 +5,8 @@ build/
 coverage/
 .vite/
 .cache/
+.upstream/
+.staged-data/
 
 .env
 .env.*

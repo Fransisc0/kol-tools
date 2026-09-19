@@ -35,8 +35,28 @@ if (forbidden.length) {
 const dataManifest = JSON.parse(
   await readFile(path.join(pagesDirectory, 'tcrs', 'data', 'manifest.json'), 'utf8'),
 );
+if (dataManifest.version !== 2) {
+  throw new Error('The Pages data manifest has an unsupported version.');
+}
 if (!Array.isArray(dataManifest.files) || dataManifest.files.length !== 162) {
   throw new Error(`Expected 162 allowlisted TCRS files, found ${dataManifest.files.length}.`);
+}
+if (!Array.isArray(dataManifest.sourceFiles) || dataManifest.sourceFiles.length !== 171) {
+  throw new Error(`Expected 171 approved KoLmafia source files, found ${dataManifest.sourceFiles?.length}.`);
+}
+if (!/^[0-9a-f]{64}$/.test(dataManifest.dataFingerprint)) {
+  throw new Error('The Pages data manifest is missing a valid data fingerprint.');
+}
+for (const file of [...dataManifest.files, dataManifest.referenceIndex, ...dataManifest.sourceFiles]) {
+  if (
+    !file ||
+    typeof file.path !== 'string' ||
+    !Number.isSafeInteger(file.bytes) ||
+    file.bytes <= 0 ||
+    !/^[0-9a-f]{64}$/.test(file.sha256)
+  ) {
+    throw new Error('The Pages data manifest contains invalid file metadata.');
+  }
 }
 await access(path.join(pagesDirectory, 'tcrs', 'data', 'reference-data.json'));
 

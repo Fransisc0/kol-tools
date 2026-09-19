@@ -42,4 +42,15 @@ describe('ItemIdentity', () => {
     expect(html).toContain('Unchanged');
     expect(html.match(/Ben-Gal Balm/g)).toHaveLength(2); // visible text plus title attribute
   });
+
+  it('renders untrusted upstream names as escaped text', () => {
+    const value = item({ origName: '<img src=x onerror=alert(1)>', tcrsName: '<script>alert(1)</script>' });
+    const html = renderToStaticMarkup(
+      <ItemIdentity item={value} display={getItemDisplayModel(value)} variant="row" />,
+    );
+    expect(html).toContain('&lt;img');
+    expect(html).toContain('&lt;script&gt;');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('<img');
+  });
 });

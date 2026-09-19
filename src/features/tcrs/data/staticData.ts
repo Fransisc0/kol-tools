@@ -1,5 +1,6 @@
 import { CLASSES, MOON_SIGNS } from '../../../data/constants';
 import type { TCRSFileSet } from '../domain/parser';
+import { isTCRSDataManifest, type TCRSDataManifest } from './dataManifest';
 import {
   deserializeReferenceData,
   type ReferenceData,
@@ -24,6 +25,13 @@ async function fetchRequired(url: string, signal?: AbortSignal): Promise<Respons
 export async function loadReferenceData(baseUrl: string, signal?: AbortSignal): Promise<ReferenceData> {
   const response = await fetchRequired(`${baseUrl}data/reference-data.json`, signal);
   return deserializeReferenceData((await response.json()) as SerializedReferenceData);
+}
+
+export async function loadDataManifest(baseUrl: string, signal?: AbortSignal): Promise<TCRSDataManifest> {
+  const response = await fetchRequired(`${baseUrl}data/manifest.json`, signal);
+  const manifest: unknown = await response.json();
+  if (!isTCRSDataManifest(manifest)) throw new Error('The data manifest is invalid.');
+  return manifest;
 }
 
 export async function loadTCRSFiles(

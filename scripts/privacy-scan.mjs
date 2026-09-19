@@ -4,7 +4,14 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 
 const root = process.cwd();
-const ignoredDirectories = new Set(['.git', 'node_modules', 'coverage', 'scripts\\legacy']);
+const ignoredDirectories = new Set([
+  '.git',
+  '.upstream',
+  '.staged-data',
+  'node_modules',
+  'coverage',
+  'scripts\\legacy',
+]);
 const ignoredFiles = new Set(['scripts\\privacy-scan.mjs']);
 const textExtensions = new Set([
   '.cjs',
