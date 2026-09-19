@@ -38,4 +38,16 @@ describe('release configuration', () => {
     expect(actionReferences.length).toBeGreaterThan(0);
     expect(actionReferences.every((reference) => /^[a-f0-9]{40}$/.test(reference))).toBe(true);
   });
+
+  it('refreshes KoLmafia data daily without source-branch write access', () => {
+    const workflow = fs.readFileSync('.github/workflows/pages.yml', 'utf8');
+    expect(workflow).toContain("cron: '17 6 * * *'");
+    expect(workflow).toContain('repository: kolmafia/kolmafia');
+    expect(workflow).toContain('persist-credentials: false');
+    expect(workflow).toContain('contents: read');
+    expect(workflow).not.toContain('contents: write');
+    expect(workflow).toContain('pages: write');
+    expect(workflow).toContain('id-token: write');
+    expect(workflow).toContain('npm run verify:upstream');
+  });
 });

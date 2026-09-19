@@ -9,17 +9,20 @@ import {
 } from '../types';
 import type { ItemTypeKey } from '../components/ItemList';
 import { useTCRSData } from '../features/tcrs/hooks/useTCRSData';
+import { useDataManifest } from '../features/tcrs/hooks/useDataManifest';
 import { usePreferences } from '../hooks/usePreferences';
 import { MainSectionTabs } from '../components/MainSectionTabs';
 import { MainContent } from '../components/MainContent';
 import { Sidebar } from '../components/Sidebar';
 import { Loader2, Layers, AlertCircle } from 'lucide-react';
 import { CLASSES, MOON_SIGNS } from '../data/constants';
+import { DataVersionStatus } from '../components/DataVersionStatus';
 
 export default function App() {
   const [selectedClass, setSelectedClass] = useState<string>('Seal_Clubber');
   const [selectedSign, setSelectedSign] = useState<string>('Mongoose');
   const { data, loading, error, isProcessingSlow, retry } = useTCRSData(selectedClass, selectedSign);
+  const dataManifest = useDataManifest();
 
   const [activeSection, setActiveSection] = useState<string>('turn-generation');
   const [activeSubCategory, setActiveSubCategory] = useState<string>('food');
@@ -123,6 +126,10 @@ export default function App() {
             <div className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0">
               <span className="text-slate-300 hidden sm:inline">|</span>
               <span className="font-semibold text-slate-600 sm:font-normal">TCRS Viewer</span>
+              <span className="text-slate-300 hidden md:inline">·</span>
+              <span className="hidden md:inline-flex">
+                <DataVersionStatus manifest={dataManifest} />
+              </span>
             </div>
           </div>
 

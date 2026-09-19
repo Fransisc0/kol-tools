@@ -16,12 +16,14 @@ For each selection, the browser loads the shared reference index once and the se
 - `src/shared` and existing typed utilities hold storage and cross-feature primitives.
 - `scripts/data` converts checked-in KoLmafia sources into the public reference index.
 
-The build-time generator is the only code allowed to inspect the complete source-data tree. Its output is deterministic and generated rather than committed.
+The build-time generator is the only code allowed to inspect the complete normalized source-data tree. Local development uses the checked-in snapshot. Production checks out only the approved files from `kolmafia/kolmafia`, normalizes them into an ignored staging directory, validates them as untrusted text, and generates the same static artifact shape. Upstream code is never executed.
 
 ## Public artifact
 
-`dist/pages` is the deployable GitHub Pages artifact. It contains the hub, privacy page, viewer, static assets, reference index, and exactly 162 allowlisted TCRS files. Source maps, environment files, logs, local paths, backend code, and server bundles are forbidden by artifact verification.
+`dist/pages` is the deployable GitHub Pages artifact. It contains the hub, viewer, static assets, reference index, a sanitized source manifest, and exactly 162 allowlisted TCRS files. Source maps, environment files, logs, local paths, upstream checkout contents, backend code, and server bundles are forbidden by artifact verification.
 
 ## Compatibility
 
 Parser output remains equivalent to the pre-static release. `scripts/fixtures/tcrs-golden-hashes.json` records a SHA-256 hash of each of the 54 serialized responses. `npm run verify:data` rebuilds each response from public static inputs and compares it with those hashes.
+
+Dynamic upstream content cannot match fixed golden hashes by definition. The deployment workflow therefore verifies the parser against the committed golden snapshot first, then independently checks deterministic generation, structural invariants, source identity, file hashes, and successful parsing for all 54 staged upstream combinations.

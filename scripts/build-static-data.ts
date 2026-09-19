@@ -1,12 +1,28 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { CLASSES, MOON_SIGNS } from '../src/data/constants';
+import type { ManifestFile, TCRSDataManifest } from '../src/features/tcrs/data/dataManifest';
+import { describeLocalDataset } from './data/kolmafiaDataset';
 import { loadReferenceData } from './data/referenceDataBuilder';
 
 const root = process.cwd();
 const outputDirectory = path.join(root, 'public', 'data');
-const sourceDirectory = path.join(root, 'data', 'kolmafia', 'tcrs');
+const defaultDataRoot = path.join(root, 'data', 'kolmafia');
+
+interface PrepareStaticDataOptions {
+  dataRoot?: string;
+}
+
+async function fileMetadata(filename: string, publicPath: string): Promise<ManifestFile> {
+  const [contents, fileStats] = await Promise.all([readFile(filename), stat(filename)]);
+  return {
+    path: publicPath.replaceAll('\\', '/'),
+    bytes: fileStats.size,
+    sha256: createHash('sha256').update(contents).digest('hex'),
+  };
+}
 
 function recordFromMap<T>(map: ReadonlyMap<string, T>): Record<string, T> {
   return Object.fromEntries(
@@ -70,27 +86,31 @@ function buildZoneIndex(combatsRaw: string, monstersRaw: string, concoctionsRaw:
   return recordFromMap(itemZones);
 }
 
-export async function prepareStaticData(): Promise<void> {
+export async function prepareStaticData(options: PrepareStaticDataOptions = {}): Promise<void> {
+  const dataRoot = path.resolve(options.dataRoot ?? defaultDataRoot);
+  const sourceDirectory = path.join(dataRoot, 'tcrs');
   await rm(outputDirectory, { recursive: true, force: true });
   await mkdir(path.join(outputDirectory, 'tcrs'), { recursive: true });
 
-  const referenceData = loadReferenceData(root);
+  const sourceDataset = await describeLocalDataset(dataRoot);
+  const referenceData = loadReferenceData(dataRoot, root);
   const [combatsRaw, monstersRaw, concoctionsRaw] = await Promise.all([
-    readFile(path.join(root, 'data/kolmafia/combats.txt'), 'utf8'),
-    readFile(path.join(root, 'data/kolmafia/monsters.txt'), 'utf8'),
-    readFile(path.join(root, 'data/kolmafia/concoctions.txt'), 'utf8'),
+    readFile(path.join(dataRoot, 'combats.txt'), 'utf8'),
+    readFile(path.join(dataRoot, 'monsters.txt'), 'utf8'),
+    readFile(path.join(dataRoot, 'concoctions.txt'), 'utf8'),
   ]);
 
   const combinations: string[] = [];
-  const publicFiles: string[] = [];
+  const publicFiles: ManifestFile[] = [];
   for (const characterClass of CLASSES) {
     for (const moonSign of MOON_SIGNS) {
       const stem = `TCRS_${characterClass.id}_${moonSign.id}`;
       combinations.push(`${characterClass.id}_${moonSign.id}`);
       for (const suffix of ['', '_cafe_food', '_cafe_booze']) {
         const filename = `${stem}${suffix}.txt`;
-        await cp(path.join(sourceDirectory, filename), path.join(outputDirectory, 'tcrs', filename));
-        publicFiles.push(`tcrs/${filename}`);
+        const destination = path.join(outputDirectory, 'tcrs', filename);
+        await cp(path.join(sourceDirectory, filename), destination);
+        publicFiles.push(await fileMetadata(destination, `tcrs/${filename}`));
       }
     }
   }
@@ -105,15 +125,27 @@ export async function prepareStaticData(): Promise<void> {
     itemZones: buildZoneIndex(combatsRaw, monstersRaw, concoctionsRaw),
   };
 
-  await writeFile(path.join(outputDirectory, 'reference-data.json'), JSON.stringify(serialized));
-  await writeFile(
-    path.join(outputDirectory, 'manifest.json'),
-    JSON.stringify({ version: 1, combinations, files: publicFiles }),
-  );
+  const referenceFilename = path.join(outputDirectory, 'reference-data.json');
+  await writeFile(referenceFilename, JSON.stringify(serialized));
+  const manifest: TCRSDataManifest = {
+    version: 2,
+    source: sourceDataset.source,
+    dataFingerprint: sourceDataset.fingerprint,
+    combinations,
+    files: publicFiles,
+    referenceIndex: await fileMetadata(referenceFilename, 'reference-data.json'),
+    sourceFiles: sourceDataset.files,
+  };
+  await writeFile(path.join(outputDirectory, 'manifest.json'), JSON.stringify(manifest));
 
   console.log(`Prepared ${combinations.length} class/sign combinations for static hosting.`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  await prepareStaticData();
+  const sourceIndex = process.argv.indexOf('--source');
+  const dataRoot = sourceIndex >= 0 ? process.argv[sourceIndex + 1] : undefined;
+  if (sourceIndex >= 0 && (!dataRoot || dataRoot.startsWith('--'))) {
+    throw new Error('The --source option requires a dataset directory.');
+  }
+  await prepareStaticData({ dataRoot });
 }

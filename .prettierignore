@@ -1,4 +1,6 @@
 data/
+.upstream/
+.staged-data/
 dist/
 coverage/
 node_modules/
