@@ -1,7 +1,5 @@
 # KoL Tools
 
-An open-source, privacy-conscious collection of utilities built from public KoLmafia data. The first tool is a compact browser for Two Crazy Random Summer item transformations.
-
 - Hub: `https://fransisc0.github.io/kol-tools/`
 - TCRS viewer: `https://fransisc0.github.io/kol-tools/tcrs/`
 
@@ -10,9 +8,7 @@ An open-source, privacy-conscious collection of utilities built from public KoLm
 - Compare all 54 class and moon-sign combinations.
 - Browse turn generation, unified buffs, NPC stores, zones, or all items.
 - Search, sort, filter, paginate, and switch between compact rows and cards.
-- Load only the selected dataset and parse it off the main thread.
-- Refresh production data daily from the official KoLmafia repository after validating all 54 combinations.
-- No backend, accounts, analytics, ads, tracking, cookies, or paid infrastructure.
+- Automatically updates based off of Kolmafia's data
 
 ## Development
 
