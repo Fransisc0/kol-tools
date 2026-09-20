@@ -199,7 +199,7 @@ function loadThriftyWhitelist(projectRoot: string, thriftyWhitelist: Set<string>
 }
 
 export function loadReferenceData(
-  dataRoot = path.join(process.cwd(), 'data', 'kolmafia'),
+  dataRoot: string,
   projectRoot = process.cwd(),
 ): BuildReferenceData {
   const data: BuildReferenceData = {

@@ -17,14 +17,12 @@ export function DataVersionStatus({ manifest }: DataVersionStatusProps) {
   if (!manifest) return null;
 
   const { revision, committedAt } = manifest.source;
-  const dateLabel = committedAt ? dateFormatter.format(new Date(committedAt)) : 'bundled snapshot';
-  const title = revision
-    ? `KoLmafia data from ${committedAt ?? 'unknown date'} · commit ${revision}`
-    : 'KoLmafia bundled data snapshot';
+  const dateLabel = dateFormatter.format(new Date(manifest.generatedAt));
+  const title = `Generated ${manifest.generatedAt} · Data of Loathing revision ${manifest.dataOfLoathing.lastRevision} · KoLmafia commit ${revision ?? 'unknown'} (${committedAt ?? 'unknown date'})`;
   const content = (
     <>
       <Database className="h-3 w-3 shrink-0" aria-hidden="true" />
-      <span>KoLmafia data · {dateLabel}</span>
+      <span>TCRS data · {dateLabel}</span>
     </>
   );
 

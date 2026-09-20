@@ -6,3 +6,4 @@
 *.jpeg binary
 *.gif binary
 *.ico binary
+scripts/fixtures/reviewed-tcrs-roll-tables.txt whitespace=-trailing-space,-blank-at-eof

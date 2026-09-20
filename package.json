@@ -19,12 +19,13 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "predev": "npm run prepare:data",
+    "predev": "node --experimental-sqlite --import tsx scripts/ensure-dev-data.ts",
     "dev": "vite",
     "clean": "rimraf dist coverage .vite public/data",
-    "data:sync": "tsx scripts/sync-kolmafia-data.ts",
-    "deployment:check": "tsx scripts/should-deploy-pages.ts",
-    "prepare:data": "tsx scripts/build-static-data.ts",
+    "generate:tcrs": "node --experimental-sqlite --import tsx scripts/build-generated-static-data.ts",
+    "data:download": "tsx scripts/download-dol.ts",
+    "data:check": "tsx scripts/check-current-inputs.ts",
+    "prepare:data": "node --experimental-sqlite --import tsx scripts/build-generated-static-data.ts",
     "typecheck": "tsc -p tsconfig.client.json --noEmit && tsc -p tsconfig.tools.json --noEmit",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
@@ -33,14 +34,14 @@
     "build:client": "vite build",
     "build:hub": "node scripts/build-pages.mjs",
     "build": "npm run clean && npm run prepare:data && npm run build:client && npm run build:hub",
-    "build:staged": "npm run clean && npm run prepare:data -- --source .staged-data/kolmafia && npm run build:client && npm run build:hub",
+    "build:staged": "npm run clean && npm run prepare:data -- --kolmafia-root .upstream/kolmafia --dol-database .staged-data/dol.sqlite --dol-etag-file .staged-data/dol.etag && npm run verify:data && npm run build:client && npm run build:hub",
     "preview": "vite preview --outDir dist/pages/tcrs",
     "verify:pages": "node scripts/verify-pages.mjs",
-    "verify:data": "npm run prepare:data && tsx scripts/verify-datasets.ts",
-    "verify:data-determinism": "tsx scripts/verify-static-data.ts",
-    "verify:upstream": "tsx scripts/verify-upstream-data.ts",
+    "verify:data": "tsx scripts/verify-generated-datasets.ts",
+    "verify:data-determinism": "node --experimental-sqlite --import tsx scripts/verify-generated-determinism.ts",
     "verify:privacy": "node scripts/privacy-scan.mjs",
-    "verify": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run verify:data && npm run verify:data-determinism && npm run build && npm run verify:pages && npm run verify:privacy && npm audit --audit-level=high && npm audit --omit=dev --audit-level=high"
+    "verify:code": "npm run typecheck && npm run lint && npm run format:check && npm test && npm audit --audit-level=high && npm audit --omit=dev --audit-level=high",
+    "verify": "npm run verify:code && npm run build && npm run verify:data && npm run verify:data-determinism && npm run verify:pages && npm run verify:privacy"
   },
   "dependencies": {
     "lucide-react": "^0.546.0",

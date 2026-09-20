@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Check out approved KoLmafia data
+      - name: Check out current KoLmafia inputs
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: kolmafia/kolmafia
@@ -36,7 +36,7 @@ jobs:
           persist-credentials: false
           sparse-checkout-cone-mode: false
           sparse-checkout: |
-            /data/TCRS
+            /src/data/tcrs.txt
             /src/data/items.txt
             /src/data/modifiers.txt
             /src/data/npcstores.txt
@@ -46,12 +46,17 @@ jobs:
             /src/data/monsters.txt
             /src/data/cafe_food.txt
             /src/data/cafe_booze.txt
-      - name: Record KoLmafia source revision
-        id: source
-        shell: bash
-        run: |
-          echo "revision=$(git -C .upstream/kolmafia rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "committed_at=$(git -C .upstream/kolmafia show -s --format=%cI HEAD)" >> "$GITHUB_OUTPUT"
+            /src/data/fullness.txt
+            /src/data/inebriety.txt
+            /src/net/sourceforge/kolmafia/persistence/TCRSDatabase.java
+            /src/net/sourceforge/kolmafia/objectpool/ItemPool.java
+            /src/net/sourceforge/kolmafia/objectpool/EffectPool.java
+            /src/net/sourceforge/kolmafia/modifiers/DoubleModifier.java
+            /src/net/sourceforge/kolmafia/modifiers/BooleanModifier.java
+            /src/net/sourceforge/kolmafia/modifiers/StringModifier.java
+            /src/net/sourceforge/kolmafia/utilities/PHPMTRandom.java
+            /src/net/sourceforge/kolmafia/utilities/PHPRandom.java
+            /src/net/sourceforge/kolmafia/utilities/PHPRandomSelection.java
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -59,26 +64,22 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Verify application against the committed snapshot
-        run: npm run verify
-      - name: Stage the approved KoLmafia files
-        run: >-
-          npm run data:sync --
-          --source .upstream/kolmafia
-          --destination .staged-data/kolmafia
-          --revision "${{ steps.source.outputs.revision }}"
-          --committed-at "${{ steps.source.outputs.committed_at }}"
-      - name: Validate all upstream datasets
-        run: npm run verify:upstream -- --source .staged-data/kolmafia
-      - name: Check whether deployment data changed
+      - name: Verify application code and dependencies
+        run: npm run verify:code
+      - name: Download current Data of Loathing database
+        run: npm run data:download
+      - name: Check reviewed algorithm and input fingerprint
         id: deployment-check
-        run: npm run deployment:check
-      - name: Build staged Pages artifact
+        run: npm run data:check
+      - name: Build generated Pages artifact
         if: steps.deployment-check.outputs.should_deploy == 'true'
         run: npm run build:staged
-      - name: Verify staged Pages artifact
+      - name: Verify generated Pages artifact
         if: steps.deployment-check.outputs.should_deploy == 'true'
-        run: npm run verify:pages && npm run verify:privacy
+        run: |
+          npm run verify:data-determinism -- --kolmafia-root .upstream/kolmafia --dol-database .staged-data/dol.sqlite --dol-etag-file .staged-data/dol.etag
+          npm run verify:pages
+          npm run verify:privacy
       - name: Configure GitHub Pages
         if: steps.deployment-check.outputs.should_deploy == 'true'
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

@@ -5,7 +5,7 @@ export interface ManifestFile {
 }
 
 export interface TCRSDataManifest {
-  version: 2;
+  version: 3;
   source: {
     repository: 'kolmafia/kolmafia';
     revision: string | null;
@@ -16,6 +16,14 @@ export interface TCRSDataManifest {
   files: ManifestFile[];
   referenceIndex: ManifestFile;
   sourceFiles: ManifestFile[];
+  generatedAt: string;
+  dataOfLoathing: {
+    url: string;
+    etag: string | null;
+    lastUpdate: number;
+    lastRevision: number;
+  };
+  algorithmVersion: string;
 }
 
 function isManifestFile(value: unknown): value is ManifestFile {
@@ -35,7 +43,7 @@ export function isTCRSDataManifest(value: unknown): value is TCRSDataManifest {
   if (!value || typeof value !== 'object') return false;
   const candidate = value as Partial<TCRSDataManifest>;
   return (
-    candidate.version === 2 &&
+    candidate.version === 3 &&
     candidate.source?.repository === 'kolmafia/kolmafia' &&
     (candidate.source.revision === null ||
       (typeof candidate.source.revision === 'string' && /^[0-9a-f]{40}$/.test(candidate.source.revision))) &&
@@ -49,6 +57,14 @@ export function isTCRSDataManifest(value: unknown): value is TCRSDataManifest {
     candidate.files.every(isManifestFile) &&
     isManifestFile(candidate.referenceIndex) &&
     Array.isArray(candidate.sourceFiles) &&
-    candidate.sourceFiles.every(isManifestFile)
+    candidate.sourceFiles.every(isManifestFile) &&
+    (typeof candidate.generatedAt === 'string' &&
+        Number.isFinite(Date.parse(candidate.generatedAt)) &&
+        candidate.dataOfLoathing?.url === 'https://data.loathers.net/dol.sqlite' &&
+        (candidate.dataOfLoathing.etag === null || typeof candidate.dataOfLoathing.etag === 'string') &&
+        Number.isSafeInteger(candidate.dataOfLoathing.lastUpdate) &&
+        Number.isSafeInteger(candidate.dataOfLoathing.lastRevision) &&
+        typeof candidate.algorithmVersion === 'string' &&
+        /^[0-9a-f]{64}$/.test(candidate.algorithmVersion))
   );
 }

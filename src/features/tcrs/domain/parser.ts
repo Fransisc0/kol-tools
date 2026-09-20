@@ -9,17 +9,12 @@ import { createEmptyResponse } from './responseFactory';
 import { getItemSourceEnrichment } from './itemEnrichment';
 import type { ReferenceData } from './referenceData';
 import { finalizeResponse } from './responseFinalizer';
+import type { TCRSRecordSet } from './tcrsRecords';
 
-export interface TCRSFileSet {
-  main: string;
-  cafeFood: string;
-  cafeBooze: string;
-}
-
-export function parseTCRSData(
+export function parseTCRSRecords(
   className: string,
   moonSign: string,
-  files: TCRSFileSet,
+  records: TCRSRecordSet,
   referenceData: ReferenceData,
 ): TCRSDataResponse {
   const normClass = className.replace(/\s+/g, '_');
@@ -29,17 +24,17 @@ export function parseTCRSData(
 
   const filesToRead = [
     {
-      content: files.main,
+      content: records.main,
       isCafe: false,
       forcedType: '',
     },
     {
-      content: files.cafeFood,
+      content: records.cafeFood,
       isCafe: true,
       forcedType: 'food',
     },
     {
-      content: files.cafeBooze,
+      content: records.cafeBooze,
       isCafe: true,
       forcedType: 'drink',
     },
@@ -48,20 +43,7 @@ export function parseTCRSData(
   const seenAllItemIds = new Set<number>();
 
   for (const { content, isCafe, forcedType } of filesToRead) {
-    if (!content) continue;
-    const lines = content.split('\n');
-
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      const parts = line.split('\t');
-      if (parts.length < 5) continue;
-
-      const id = parseInt(parts[0], 10);
-      const tcrsName = parts[1];
-      const size = parseInt(parts[2], 10) || 0;
-      const quality = parts[3];
-      const itemModifiers = parts[4] || '';
-
+    for (const [id, tcrsName, size, quality, itemModifiers] of content) {
       const origMeta = referenceData.items.get(id) || {
         name: tcrsName,
         image: '',

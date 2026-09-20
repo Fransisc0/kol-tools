@@ -61,9 +61,14 @@ export function decodeHtmlEntities(value: string): string {
     if (entity[0] === '#') {
       const hexadecimal = entity[1]?.toLowerCase() === 'x';
       const codePoint = Number.parseInt(entity.slice(hexadecimal ? 2 : 1), hexadecimal ? 16 : 10);
-      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : match;
+      return Number.isInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : match;
     }
-    return HTML_ENTITIES[entity.toLowerCase()] ?? match;
+    if (entity === 'Dagger') return '‡';
+    const decoded = HTML_ENTITIES[entity.toLowerCase()];
+    if (!decoded) return match;
+    return entity[0] === entity[0].toUpperCase() ? decoded.toUpperCase() : decoded;
   });
 }
 

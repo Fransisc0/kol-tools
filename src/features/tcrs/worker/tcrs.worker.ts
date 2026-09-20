@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 
 import type { TCRSDataResponse } from '../../../types';
-import { loadReferenceData, loadTCRSFiles } from '../data/staticData';
-import { parseTCRSData } from '../domain/parser';
+import { loadReferenceData, loadTCRSRecords } from '../data/staticData';
+import { parseTCRSRecords } from '../domain/parser';
 import type { ReferenceData } from '../domain/referenceData';
 import type { ParseRequest, ParseResponse } from './protocol';
 import { RecentDatasetCache } from './recentDatasetCache';
@@ -22,9 +22,11 @@ async function load(request: ParseRequest): Promise<TCRSDataResponse> {
   referencesPromise ??= loadReferenceData(request.baseUrl);
   const pending = Promise.all([
     referencesPromise,
-    loadTCRSFiles(request.baseUrl, request.className, request.moonSign),
+    loadTCRSRecords(request.baseUrl, request.className, request.moonSign),
   ])
-    .then(([references, files]) => parseTCRSData(request.className, request.moonSign, files, references))
+    .then(([references, records]) =>
+      parseTCRSRecords(request.className, request.moonSign, records, references),
+    )
     .then((data) => {
       responseCache.set(key, data);
       return data;
