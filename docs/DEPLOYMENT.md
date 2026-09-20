@@ -1,35 +1,9 @@
 # Deployment
 
-GitHub Pages is the only runtime host. The project has no Render service, API, database, payment method, or runtime secrets.
+GitHub Pages is the sole runtime host. There is no API, Render service, database, payment method, runtime secret, or browser-side upstream request.
 
-## Automatic data refresh and publish
+The Pages workflow runs on `main`, daily at 06:17 UTC, and via manual dispatch. Its read-only build job checks out the approved KoLmafia inputs, downloads Data of Loathing, checks reviewed algorithm hashes and data fingerprint, runs code/dependency checks, generates and validates all 54 datasets, and uploads `dist/pages`. Only the final deployment job receives `pages: write` and `id-token: write`. On failure, the previous successful deployment remains online. Set Pages source to **GitHub Actions**.
 
-The Pages workflow runs on pushes to `main`, manual dispatch, and daily at 06:17 UTC. It verifies the application against the committed snapshot, sparsely checks out the official KoLmafia data, copies only the 171 approved files, validates every supported dataset, and builds the Pages artifact from that staging directory. An unchanged scheduled data fingerprint skips deployment.
+Public URLs are `/kol-tools/` for the hub and `/kol-tools/tcrs/` for the viewer. To inspect the exact artifact locally, run `npm run build`, `npm run verify:pages`, and `npm run preview`; `npm run verify` includes these checks and privacy scanning. `npm run build:staged` accepts a sparse KoLmafia checkout at `.upstream/kolmafia` and DoL snapshot at `.staged-data/dol.sqlite` as prepared by the workflow.
 
-The build job has read-only repository access. Only the final job receives `pages: write` and `id-token: write`; it cannot modify source branches. A failed synchronization, validation, or build never replaces the last successful deployment. Repository Pages settings must use **GitHub Actions** as the source.
-
-Public layout:
-
-- `/kol-tools/` — tools hub
-- `/kol-tools/tcrs/` — TCRS viewer
-
-To inspect the exact artifact locally:
-
-```sh
-npm run build
-npm run preview
-```
-
-To reproduce a production data build, check out the recorded KoLmafia revision, run `npm run data:sync` with its source path and commit metadata, then run `npm run verify:upstream` and `npm run build:staged`. The published manifest records the exact revision and SHA-256 inventory.
-
-## Release procedure
-
-1. Run `npm run verify` from a clean checkout.
-2. Review dependency, privacy, artifact, and 54-dataset equivalence results.
-3. Merge only after CI, CodeQL, and secret scanning pass.
-4. Confirm the Pages deployment and both public URLs.
-5. Check responsive layouts, keyboard interaction, dataset switching, and the browser console.
-6. Verify the compact data-version link resolves to the manifest's exact KoLmafia commit.
-7. Tag the verified commit using semantic versioning.
-
-GitHub Pages cannot add project-defined HTTP response headers. Every HTML entry point therefore includes a restrictive CSP and no-referrer policy. Controls that require response headers, such as `frame-ancestors`, would require a different host.
+Release through a protected-branch pull request. Merge only after CI, CodeQL, and secret scanning pass; then verify both public URLs, dataset switching, responsive layouts, console, and the manifest's source commit. GitHub Pages cannot supply custom response headers, so HTML uses restrictive CSP and referrer meta policies; response-header controls require a different host.

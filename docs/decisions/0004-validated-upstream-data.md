@@ -1,13 +1,3 @@
-# ADR 0004: Validated upstream data deployments
+# Validated deterministic TCRS generation
 
-## Decision
-
-Refresh the production static dataset daily from the official KoLmafia repository during the GitHub Pages workflow. Copy only a fixed data allowlist, record the exact source commit and file hashes, validate all 54 combinations, and deploy only a successful artifact.
-
-## Rationale
-
-Runtime cross-origin fetching would make availability, privacy, and reproducibility depend on another host for every visitor. Committing automated updates would require source-branch write permissions and conflict with protected-branch review. Build-time synchronization keeps runtime same-origin, requires no secrets, and lets a failed upstream change preserve the last working site.
-
-## Consequences
-
-Production data is normally current within one day. The repository snapshot remains the stable regression fixture rather than the production freshness mechanism. The public manifest makes every deployment reproducible from the application commit and recorded KoLmafia revision.
+Use Data of Loathing for current structured items and effects, plus current allowlisted KoLmafia roll tables and rules. Derive all 54 combinations at build time with an exact reviewed PHP-compatible RNG and TCRS implementation. Never publish or consume obsolete pre-generated KoLmafia TCRS text outputs. Record input and algorithm hashes, validate every result, and skip unchanged scheduled deployments. A changed algorithm hash needs parity review; generated JSON is disposable.

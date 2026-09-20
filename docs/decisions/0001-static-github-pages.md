@@ -10,4 +10,4 @@ The source datasets are public and read-only, so a server adds cost, availabilit
 
 ## Consequences
 
-Visitors download and process only the selected dataset. Server endpoints and runtime cross-origin refreshes are intentionally unsupported. A validated scheduled Pages build refreshes production data while the checked-in snapshot remains the reviewed regression baseline; see ADR 0004.
+Visitors download and process only the selected generated dataset. Server endpoints and runtime cross-origin refreshes are intentionally unsupported. A validated scheduled Pages build regenerates production data from current inputs; see ADR 0004.

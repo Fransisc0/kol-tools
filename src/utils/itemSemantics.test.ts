@@ -76,6 +76,8 @@ describe('modifier and entity normalization', () => {
 
   it('decodes named and numeric HTML entities', () => {
     expect(decodeHtmlEntities('Ben-Gal&trade; and jalape&ntilde;o &#332;')).toBe('Ben-Gal™ and jalapeño Ō');
+    expect(decodeHtmlEntities('Das &Uuml;berk&uuml;hlraum')).toBe('Das Überkühlraum');
+    expect(decodeHtmlEntities('&#x110000;')).toBe('&#x110000;');
   });
 
   it('decodes lookup entities once while preserving legacy trademark syntax', () => {

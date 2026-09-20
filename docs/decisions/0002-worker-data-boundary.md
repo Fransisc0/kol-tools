@@ -2,7 +2,7 @@
 
 ## Decision
 
-Generate reference data at build time, fetch three selection-specific text files, and parse them in a dedicated Web Worker.
+Generate reference data and class/sign JSON at build time, fetch only the selected dataset, and parse it in a dedicated Web Worker.
 
 ## Rationale
 

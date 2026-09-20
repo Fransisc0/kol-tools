@@ -19,7 +19,7 @@ describe('release configuration', () => {
     expect(manifest.packageManager).toMatch(/^npm@\d+\.\d+\.\d+$/);
     expect(Object.keys(manifest.dependencies ?? {}).sort()).toEqual(['lucide-react', 'react', 'react-dom']);
     expect(manifest.scripts?.start).toBeUndefined();
-    expect(manifest.scripts?.['prepare:data']).toBe('tsx scripts/build-static-data.ts');
+    expect(manifest.scripts?.['prepare:data']).toContain('build-generated-static-data.ts');
   });
 
   it('has no backend or paid-host configuration', () => {
@@ -48,6 +48,8 @@ describe('release configuration', () => {
     expect(workflow).not.toContain('contents: write');
     expect(workflow).toContain('pages: write');
     expect(workflow).toContain('id-token: write');
-    expect(workflow).toContain('npm run verify:upstream');
+    expect(workflow).toContain('npm run build:staged');
+    expect(workflow).toContain('npm run data:check');
+    expect(workflow).not.toContain('/data/TCRS/');
   });
 });

@@ -1,5 +1,5 @@
 import { CLASSES, MOON_SIGNS } from '../../../data/constants';
-import type { TCRSFileSet } from '../domain/parser';
+import { assertTCRSRecordSet, type TCRSRecordSet } from '../domain/tcrsRecords';
 import { isTCRSDataManifest, type TCRSDataManifest } from './dataManifest';
 import {
   deserializeReferenceData,
@@ -34,18 +34,17 @@ export async function loadDataManifest(baseUrl: string, signal?: AbortSignal): P
   return manifest;
 }
 
-export async function loadTCRSFiles(
+/** Fetch exactly one generated JSON dataset for the selected class and sign. */
+export async function loadTCRSRecords(
   baseUrl: string,
   className: string,
   moonSign: string,
   signal?: AbortSignal,
-): Promise<TCRSFileSet> {
+): Promise<TCRSRecordSet> {
   assertValidSelection(className, moonSign);
-  const stem = `${baseUrl}data/tcrs/TCRS_${className}_${moonSign}`;
-  const [main, cafeFood, cafeBooze] = await Promise.all(
-    [`${stem}.txt`, `${stem}_cafe_food.txt`, `${stem}_cafe_booze.txt`].map(async (url) =>
-      (await fetchRequired(url, signal)).text(),
-    ),
-  );
-  return { main, cafeFood, cafeBooze };
+  const url = `${baseUrl}data/generated/TCRS_${className}_${moonSign}.json`;
+  const response = await fetchRequired(url, signal);
+  const records: unknown = await response.json();
+  assertTCRSRecordSet(records, className, moonSign);
+  return records;
 }
